@@ -1,0 +1,10 @@
+Sample medical document: image
+Review: CRV002
+Description: CT Abdomen/Pelvis with contrast
+Uploaded by: Radiology
+
+This is a placeholder document for demonstration purposes.
+In a production environment, this would contain the actual medical document.
+
+File: radiology
+Type: image/jpeg

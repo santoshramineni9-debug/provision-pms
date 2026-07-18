@@ -1,0 +1,10 @@
+Sample medical document: document
+Review: CRV001
+Description: Initial Progress Note
+Uploaded by: Dr. Johnson
+
+This is a placeholder document for demonstration purposes.
+In a production environment, this would contain the actual medical document.
+
+File: clinical
+Type: application/pdf

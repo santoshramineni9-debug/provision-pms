@@ -1,0 +1,10 @@
+Sample medical document: image
+Review: CRV001
+Description: 12-Lead ECG Report
+Uploaded by: Cardiology
+
+This is a placeholder document for demonstration purposes.
+In a production environment, this would contain the actual medical document.
+
+File: ecg
+Type: application/pdf

@@ -1,0 +1,5 @@
+SQL Exec Error: duplicate column name: permissions
+SQL Exec Error: duplicate column name: fee_amount
+SQL Exec Error: duplicate column name: paid_amount
+SQL Exec Error: duplicate column name: due_date
+SQL Exec Error: duplicate column name: access_until
