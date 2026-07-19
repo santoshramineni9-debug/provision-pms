@@ -32,6 +32,52 @@ router.get('/:eligibilityId', (req, res) => {
   res.json({ ...eligibility, benefits });
 });
 
+// Verify eligibility by Member ID (real payer-side workflow: patient shows card → verify by member_id)
+router.get('/verify-member/:memberId', (req, res) => {
+  const today = new Date().toISOString().slice(0, 10);
+  const memberId = req.params.memberId;
+
+  // Find insurance by member_id
+  const ins = db.prepare('SELECT * FROM insurances WHERE member_id = ? ORDER BY id DESC LIMIT 1').get(memberId);
+  if (!ins) return res.json({ status: 'not_found', message: 'No insurance found for Member ID: ' + memberId });
+
+  // Auto-expire insurance if past termination_date
+  if (ins.status === 'active' && ins.termination_date && ins.termination_date < today) {
+    db.prepare("UPDATE insurances SET status = 'expired' WHERE id = ?").run(ins.id);
+    ins.status = 'expired';
+  }
+
+  // Find patient
+  const patient = db.prepare('SELECT * FROM patients WHERE patient_id = ?').get(ins.patient_id);
+
+  // Find eligibility record
+  const elig = db.prepare('SELECT * FROM eligibility_master WHERE patient_id = ? AND insurance_id = ? ORDER BY id DESC LIMIT 1').get(ins.patient_id, ins.id);
+  let eligibility_status = ins.status || 'unknown';
+  if (elig) {
+    if (elig.termination_date && elig.termination_date < today) {
+      eligibility_status = 'expired';
+      db.prepare("UPDATE eligibility_master SET status = 'expired' WHERE id = ?").run(elig.id);
+    } else if (elig.effective_date && elig.effective_date > today) {
+      eligibility_status = 'pending';
+    } else {
+      eligibility_status = elig.status || 'active';
+    }
+  }
+
+  const benefits = elig ? db.prepare('SELECT * FROM eligibility_benefits WHERE eligibility_id = ?').all(elig.id) : [];
+
+  res.json({
+    status: eligibility_status,
+    message: eligibility_status === 'active' ? 'Eligibility verified - ACTIVE' : eligibility_status === 'expired' ? 'Eligibility EXPIRED on ' + (elig?.termination_date || ins.termination_date || 'unknown') : 'Eligibility: ' + eligibility_status,
+    patient: patient || null,
+    insurance: ins,
+    eligibility: elig || null,
+    benefits,
+    card_image_front: ins.card_image_front || null,
+    card_image_back: ins.card_image_back || null
+  });
+});
+
 // Verify eligibility - check active status (auto-expire based on termination_date)
 router.get('/verify/:patientId', (req, res) => {
   const today = new Date().toISOString().slice(0, 10);
