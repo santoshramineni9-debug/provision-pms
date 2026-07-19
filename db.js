@@ -127,6 +127,8 @@ class Database {
         coinsurance REAL DEFAULT 0,
         out_of_pocket_max REAL DEFAULT 0,
         status TEXT DEFAULT 'active',
+        card_image_front TEXT,
+        card_image_back TEXT,
         created_at TEXT DEFAULT (datetime('now'))
       )`,
       `CREATE TABLE IF NOT EXISTS providers (

@@ -29,6 +29,10 @@ async function start() {
   const db = require('./db');
   await db.ready;
 
+  // Add card_image columns to insurances table if missing
+  try { db.prepare("ALTER TABLE insurances ADD COLUMN card_image_front TEXT").run(); } catch(e) {}
+  try { db.prepare("ALTER TABLE insurances ADD COLUMN card_image_back TEXT").run(); } catch(e) {}
+
   db.prepare(`CREATE TABLE IF NOT EXISTS training_videos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,

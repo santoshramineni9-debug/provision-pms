@@ -2,6 +2,16 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { v4: uuidv4 } = require('uuid');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+const cardStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => cb(null, 'card_' + Date.now() + '_' + file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_'))
+});
+const upload = multer({ storage: cardStorage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 // Search patients by MRN, patient_id, or SSN
 router.get('/search', (req, res) => {
@@ -144,6 +154,16 @@ router.put('/:patientId/insurance/:insuranceId', (req, res) => {
 router.delete('/:patientId/insurance/:insuranceId', (req, res) => {
   db.prepare('DELETE FROM insurances WHERE id=? AND patient_id=?').run(req.params.insuranceId, req.params.patientId);
   res.json({ message: 'Insurance deleted' });
+});
+
+// Upload insurance card image
+router.post('/:patientId/insurance/:insuranceId/card', upload.single('card'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+  const side = req.body.side || 'front';
+  const col = side === 'back' ? 'card_image_back' : 'card_image_front';
+  const filePath = '/uploads/' + req.file.filename;
+  db.prepare(`UPDATE insurances SET ${col} = ? WHERE id = ? AND patient_id = ?`).run(filePath, req.params.insuranceId, req.params.patientId);
+  res.json({ message: 'Card image uploaded', path: filePath });
 });
 
 // Get dependents for patient
