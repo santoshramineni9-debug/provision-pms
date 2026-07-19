@@ -45,6 +45,14 @@ router.get('/:patientId/360', (req, res) => {
     eligibility_summary.push({ ...e, computed_status: status });
   }
 
+  // Also auto-expire insurance records based on their termination_date
+  for (const ins of insurances) {
+    if (ins.status === 'active' && ins.termination_date && ins.termination_date < today) {
+      db.prepare("UPDATE insurances SET status = 'expired' WHERE id = ?").run(ins.id);
+      ins.status = 'expired';
+    }
+  }
+
   const dependents = db.prepare('SELECT * FROM dependents WHERE guarantor_patient_id = ?').all(pid);
   const appointments = db.prepare('SELECT * FROM appointments WHERE patient_id = ? ORDER BY appointment_date DESC LIMIT 20').all(pid);
   const charges = db.prepare('SELECT * FROM charges WHERE patient_id = ? ORDER BY created_at DESC LIMIT 20').all(pid);

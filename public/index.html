@@ -3629,10 +3629,13 @@ function renderP360(d) {
     html += '<table><thead><tr><th>Type</th><th>Payer</th><th>Member ID</th><th>Group</th><th>Plan</th><th>Copay</th><th>Deductible</th><th>Coins.</th><th>Subscriber</th><th>Rel.</th><th>Eff. Date</th><th>Term. Date</th><th>Status</th></tr></thead><tbody>';
     d.insurances.forEach(i => {
       const bg = i.insurance_type === 'primary' ? '#e8f5e9' : i.insurance_type === 'secondary' ? '#e3f2fd' : '#fff3e0';
+      const insStatus = i.status || 'active';
+      const statusColor = insStatus === 'expired' ? '#e65100' : insStatus === 'active' ? '#2e7d32' : '#c62828';
+      const statusBg = insStatus === 'expired' ? '#fff3e0' : insStatus === 'active' ? '#e8f5e9' : '#ffebee';
       html += '<tr style="background:' + bg + '"><td><b>' + (i.insurance_type || '-') + '</b></td><td>' + i.payer_name + '</td><td>' + (i.member_id || '-') + '</td><td>' + (i.group_number || '-') + '</td><td>' + (i.plan_name || '-') + '</td>';
       html += '<td>$' + (i.copay || 0) + '</td><td>$' + (i.deductible || 0) + '</td><td>' + (i.coinsurance || '-') + '%</td><td>' + (i.subscriber_name || '-') + '</td><td>' + (i.relationship || '-') + '</td>';
       html += '<td>' + (i.effective_date || '-') + '</td><td>' + (i.termination_date || '-') + '</td>';
-      html += '<td><span class="status-badge status-' + (i.status || 'active') + '">' + (i.status || 'active') + '</span></td></tr>';
+      html += '<td><span style="background:' + statusBg + ';color:' + statusColor + ';padding:2px 8px;border-radius:4px;font-weight:bold">' + insStatus.toUpperCase() + '</span></td></tr>';
     });
     html += '</tbody></table>';
   } else { html += '<div style="color:#888">No insurances on file</div>'; }
