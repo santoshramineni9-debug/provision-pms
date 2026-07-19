@@ -56,15 +56,32 @@ router.get('/:chargeId', (req, res) => {
 // Check eligibility before charge
 router.get('/check-eligibility/:patientId/:insuranceId', (req, res) => {
   const { patientId, insuranceId } = req.params;
+  const today = new Date().toISOString().slice(0, 10);
   const elig = db.prepare('SELECT * FROM eligibility_master WHERE patient_id = ? AND insurance_id = ? ORDER BY id DESC LIMIT 1').get(patientId, insuranceId);
   const ins = db.prepare('SELECT * FROM insurances WHERE id = ?').get(insuranceId);
   const benefits = db.prepare('SELECT * FROM eligibility_benefits WHERE eligibility_id = ?').all(elig?.id);
-  res.json({
-    status: elig ? 'active' : 'inactive',
-    eligibility: elig || null,
-    insurance: ins || null,
-    benefits: benefits || []
-  });
+
+  let status = 'inactive';
+  let message = 'No eligibility found';
+
+  if (elig) {
+    if (elig.status === 'active' && elig.termination_date && elig.termination_date < today) {
+      status = 'expired';
+      message = 'Eligibility expired on ' + elig.termination_date;
+      db.prepare("UPDATE eligibility_master SET status = 'expired' WHERE id = ?").run(elig.id);
+    } else if (elig.effective_date && elig.effective_date > today) {
+      status = 'pending';
+      message = 'Eligibility not yet effective. Starts: ' + elig.effective_date;
+    } else if (elig.status === 'active') {
+      status = 'active';
+      message = 'Eligibility is active';
+    } else {
+      status = elig.status;
+      message = 'Eligibility status: ' + elig.status;
+    }
+  }
+
+  res.json({ status, message, eligibility: elig || null, insurance: ins || null, benefits: benefits || [] });
 });
 
 // Create charge

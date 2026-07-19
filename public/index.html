@@ -3616,12 +3616,22 @@ function renderP360(d) {
 
   // Insurance
   html += '<div class="tab-content" id="p360tab-ins"><div class="card"><div class="card-title">Insurance Policies</div>';
+  if (d.eligibility_summary && d.eligibility_summary.length) {
+    html += '<div style="margin-bottom:10px"><b>Eligibility Status:</b> ';
+    d.eligibility_summary.forEach(e => {
+      const color = e.computed_status === 'active' ? '#2e7d32' : e.computed_status === 'expired' ? '#e65100' : '#c62828';
+      const bg = e.computed_status === 'active' ? '#e8f5e9' : e.computed_status === 'expired' ? '#fff3e0' : '#ffebee';
+      html += '<span style="background:' + bg + ';color:' + color + ';padding:3px 10px;border-radius:4px;font-weight:bold;margin-right:6px">' + e.member_id + ': ' + e.computed_status.toUpperCase() + (e.termination_date ? ' (Exp: ' + e.termination_date + ')' : '') + '</span> ';
+    });
+    html += '</div>';
+  }
   if (d.insurances && d.insurances.length) {
-    html += '<table><thead><tr><th>Type</th><th>Payer</th><th>Member ID</th><th>Group</th><th>Plan</th><th>Copay</th><th>Deductible</th><th>Coins.</th><th>Subscriber</th><th>Rel.</th><th>Status</th></tr></thead><tbody>';
+    html += '<table><thead><tr><th>Type</th><th>Payer</th><th>Member ID</th><th>Group</th><th>Plan</th><th>Copay</th><th>Deductible</th><th>Coins.</th><th>Subscriber</th><th>Rel.</th><th>Eff. Date</th><th>Term. Date</th><th>Status</th></tr></thead><tbody>';
     d.insurances.forEach(i => {
       const bg = i.insurance_type === 'primary' ? '#e8f5e9' : i.insurance_type === 'secondary' ? '#e3f2fd' : '#fff3e0';
       html += '<tr style="background:' + bg + '"><td><b>' + (i.insurance_type || '-') + '</b></td><td>' + i.payer_name + '</td><td>' + (i.member_id || '-') + '</td><td>' + (i.group_number || '-') + '</td><td>' + (i.plan_name || '-') + '</td>';
       html += '<td>$' + (i.copay || 0) + '</td><td>$' + (i.deductible || 0) + '</td><td>' + (i.coinsurance || '-') + '%</td><td>' + (i.subscriber_name || '-') + '</td><td>' + (i.relationship || '-') + '</td>';
+      html += '<td>' + (i.effective_date || '-') + '</td><td>' + (i.termination_date || '-') + '</td>';
       html += '<td><span class="status-badge status-' + (i.status || 'active') + '">' + (i.status || 'active') + '</span></td></tr>';
     });
     html += '</tbody></table>';
@@ -6093,9 +6103,12 @@ async function chgCheckEligibility() {
     if (data.benefits && data.benefits.length) html += ' | <b>Benefits:</b> ' + data.benefits.map(b => b.benefit_name + ': $' + (b.covered_amount || b.benefit_amount || 0)).join(', ');
     html += '</div>';
     document.getElementById('chgEligResult').innerHTML = html;
+  } else if (data.status === 'expired') {
+    if (badge) badge.innerHTML = '<span style="color:#e65100;font-weight:bold">EXPIRED</span>';
+    document.getElementById('chgEligResult').innerHTML = '<div style="background:#fff3e0;border:2px solid #ff9800;border-radius:6px;padding:10px"><b style="color:#e65100;font-size:14px">EXPIRED - ' + (data.message || '') + '</b></div>';
   } else {
     if (badge) badge.innerHTML = '<span style="color:#c62828;font-weight:bold">INACTIVE</span>';
-    document.getElementById('chgEligResult').innerHTML = '<div style="background:#ffebee;border:2px solid #f44336;border-radius:6px;padding:10px"><b style="color:#c62828">NOT ELIGIBLE - INACTIVE</b></div>';
+    document.getElementById('chgEligResult').innerHTML = '<div style="background:#ffebee;border:2px solid #f44336;border-radius:6px;padding:10px"><b style="color:#c62828">NOT ELIGIBLE - ' + (data.message || 'INACTIVE') + '</b></div>';
   }
 }
 
@@ -6125,7 +6138,7 @@ async function saveCharge() {
     workers_comp_carrier: document.getElementById('chgWCCarrier').value || null,
     auto_claim_number: document.getElementById('chgAutoClaim').value || null,
     auto_insurance_carrier: document.getElementById('chgAutoCarrier').value || null,
-    eligibility_status: document.getElementById('chgEligResult').innerHTML.includes('ACTIVE') ? 'active' : document.getElementById('chgEligResult').innerHTML.includes('INACTIVE') ? 'inactive' : null,
+    eligibility_status: document.getElementById('chgEligResult').innerHTML.includes('ACTIVE') ? 'active' : document.getElementById('chgEligResult').innerHTML.includes('EXPIRED') ? 'expired' : document.getElementById('chgEligResult').innerHTML.includes('INACTIVE') ? 'inactive' : null,
     eligibility_checked_at: document.getElementById('chgEligResult').innerHTML ? new Date().toISOString() : null,
     auth_number: document.getElementById('chgAuthNum').value || null,
     auth_from_date: document.getElementById('chgAuthFrom').value || null,
@@ -6136,6 +6149,41 @@ async function saveCharge() {
   showToast('Charge created: ' + result.charge_id + ' | Total: $' + result.total_charges.toFixed(2));
   closeModal('modal-charge');
   loadCharges();
+  if (confirm('Charge ' + result.charge_id + ' created! Generate CMS-1500 now?')) {
+    generateAndPrintCMS1500(result.charge_id);
+  }
+}
+
+async function generateAndPrintCMS1500(chargeId) {
+  const res = await fetch(API + '/api/cms1500/generate/' + chargeId);
+  const cms = await res.json();
+  let html = '<div class="card-title" style="color:#1565c0;font-size:16px">CMS-1500 Professional Claim Form</div>';
+  html += '<table style="font-size:11px;border-collapse:collapse;width:100%">';
+  html += '<tr><td style="border:1px solid #999;padding:4px;width:50%"><b>1.</b> Payer: <b>' + (cms.payer_name || '') + '</b></td><td style="border:1px solid #999;padding:4px"><b>1a.</b> Insured ID: ' + (cms.insured_id || '') + '</td></tr>';
+  html += '<tr><td style="border:1px solid #999;padding:4px" colspan="2"><b>2.</b> Patient: <b>' + (cms.patient_name || '') + '</b></td></tr>';
+  html += '<tr><td style="border:1px solid #999;padding:4px"><b>3.</b> DOB: ' + (cms.patient_dob || '') + ' / Sex: ' + (cms.patient_gender || '') + '</td><td style="border:1px solid #999;padding:4px"><b>4.</b> Insured: ' + (cms.insured_name || '') + '</td></tr>';
+  html += '<tr><td style="border:1px solid #999;padding:4px" colspan="2"><b>5.</b> Address: ' + (cms.patient_address || '') + '</td></tr>';
+  html += '<tr><td style="border:1px solid #999;padding:4px"><b>6.</b> Relationship: ' + (cms.patient_relationship || '') + '</td><td style="border:1px solid #999;padding:4px"><b>11.</b> Group: ' + (cms.insured_group || '') + '</td></tr>';
+  html += '<tr><td style="border:1px solid #999;padding:4px"><b>21.</b> ICD: ' + (cms.icd_codes || '') + '</td><td style="border:1px solid #999;padding:4px"><b>14.</b> DOS: ' + (cms.date_of_service || '') + '</td></tr>';
+  html += '</table>';
+  if (cms.line_items && cms.line_items.length) {
+    html += '<table style="font-size:11px;border-collapse:collapse;width:100%;margin-top:8px"><thead><tr><th style="border:1px solid #999;padding:3px;background:#e3f2fd">Date</th><th style="border:1px solid #999;padding:3px;background:#e3f2fd">CPT</th><th style="border:1px solid #999;padding:3px;background:#e3f2fd">Modifiers</th><th style="border:1px solid #999;padding:3px;background:#e3f2fd">DX Ptr</th><th style="border:1px solid #999;padding:3px;background:#e3f2fd">Charges</th><th style="border:1px solid #999;padding:3px;background:#e3f2fd">Units</th></tr></thead><tbody>';
+    cms.line_items.forEach(l => {
+      html += '<tr><td style="border:1px solid #999;padding:3px">' + l.date + '</td><td style="border:1px solid #999;padding:3px">' + l.cpt + '</td><td style="border:1px solid #999;padding:3px">' + l.modifiers + '</td><td style="border:1px solid #999;padding:3px">' + l.icd_pointer + '</td><td style="border:1px solid #999;padding:3px">$' + l.charges + '</td><td style="border:1px solid #999;padding:3px">' + l.units + '</td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '<div style="margin-top:8px"><b>28. Total: $' + cms.total_charge + '</b> | <b>31.</b> Provider: ' + cms.provider_name + ' | <b>33.</b> NPI: ' + cms.provider_npi + '</div>';
+  html += '<div style="margin-top:10px"><button class="btn btn-success" onclick="printCMS1500Window()">Print CMS-1500</button></div>';
+  document.getElementById('chargeResult').innerHTML = html;
+  window._cms1500Html = html;
+}
+
+function printCMS1500Window() {
+  if (!window._cms1500Html) { showToast('Generate CMS-1500 first', 'error'); return; }
+  const win = window.open('', '_blank');
+  win.document.write('<html><head><title>CMS-1500</title><style>body{font-family:Arial,sans-serif;padding:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:4px;font-size:11px}th{background:#e3f2fd}</style></head><body>' + window._cms1500Html + '<script>window.print();window.close()</' + 'script></body></html>');
+  win.document.close();
 }
 async function viewCharge(cid) {
   const res = await fetch(API + '/api/charges/' + cid);
@@ -7967,9 +8015,15 @@ async function deleteMR(rid) {
 let ub04ChargeLines = [];
 
 async function loadIPList() {
+  const today = new Date().toISOString().slice(0, 10);
   const res = await fetch(API + '/api/inpatient');
   const ips = await res.json();
-  document.getElementById('ipTable').innerHTML = ips.map(ip => `
+  document.getElementById('ipTable').innerHTML = ips.map(ip => {
+    let eligBadge = '';
+    if (ip.insurance_id) {
+      eligBadge = '<span class="status-badge" style="background:#eee;color:#888">N/A</span>';
+    }
+    return `
     <tr>
       <td>${ip.ip_id}</td><td>${ip.patient_name || ip.patient_id}</td><td>${ip.mrn || '-'}</td>
       <td>${ip.admission_date}</td><td>${ip.discharge_date || '-'}</td><td>${ip.admission_type || '-'}</td>
@@ -7979,8 +8033,8 @@ async function loadIPList() {
         <button class="btn btn-sm btn-info" onclick="viewUB04('${ip.ip_id}')">View UB-04</button>
         <button class="btn btn-sm btn-danger" onclick="deleteIP('${ip.ip_id}')">Del</button>
       </td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
 }
 
 async function showIPModal() {
@@ -8192,6 +8246,15 @@ async function viewUB04(ipId) {
   const res = await fetch(API + '/api/inpatient/' + ipId);
   const data = await res.json();
   let html = `<div class="card-title">UB-04 for ${data.ip_id} - ${data.first_name} ${data.last_name}</div>`;
+  html += `<div style="margin-bottom:10px;padding:8px;border-radius:6px;font-weight:bold">`;
+  if (data.eligibility_status === 'active') {
+    html += `<span style="background:#e8f5e9;color:#2e7d32;padding:4px 12px;border-radius:4px">Insurance: ACTIVE</span>`;
+  } else if (data.eligibility_status === 'expired') {
+    html += `<span style="background:#fff3e0;color:#e65100;padding:4px 12px;border-radius:4px">Insurance: EXPIRED</span>`;
+  } else {
+    html += `<span style="background:#ffebee;color:#c62828;padding:4px 12px;border-radius:4px">Insurance: ${data.eligibility_status || 'UNKNOWN'}</span>`;
+  }
+  html += `</div>`;
   if (data.ub04) {
     const u = data.ub04;
     html += `<div class="ub04-section"><div class="ub04-section-title">Blocks 1-8</div><div class="ub04-grid">`;

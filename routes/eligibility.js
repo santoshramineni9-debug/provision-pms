@@ -4,12 +4,22 @@ const db = require('../db');
 
 // Get eligibility for patient
 router.get('/patient/:patientId', (req, res) => {
+  const today = new Date().toISOString().slice(0, 10);
   const eligibilities = db.prepare(`
     SELECT e.*, i.payer_name, i.member_id as ins_member_id, i.group_number
     FROM eligibility_master e
     LEFT JOIN insurances i ON e.insurance_id = i.id
     WHERE e.patient_id = ?
   `).all(req.params.patientId);
+
+  // Auto-expire records where termination_date has passed
+  for (const e of eligibilities) {
+    if (e.status === 'active' && e.termination_date && e.termination_date < today) {
+      db.prepare("UPDATE eligibility_master SET status = 'expired' WHERE id = ?").run(e.id);
+      e.status = 'expired';
+    }
+  }
+
   res.json(eligibilities);
 });
 
@@ -22,8 +32,9 @@ router.get('/:eligibilityId', (req, res) => {
   res.json({ ...eligibility, benefits });
 });
 
-// Verify eligibility - check active status
+// Verify eligibility - check active status (auto-expire based on termination_date)
 router.get('/verify/:patientId', (req, res) => {
+  const today = new Date().toISOString().slice(0, 10);
   const eligibility = db.prepare(`
     SELECT e.*, i.payer_name, i.member_id as ins_member_id, i.status as insurance_status
     FROM eligibility_master e
@@ -34,6 +45,15 @@ router.get('/verify/:patientId', (req, res) => {
 
   if (!eligibility) {
     return res.json({ status: 'inactive', message: 'No active eligibility found' });
+  }
+
+  if (eligibility.termination_date && eligibility.termination_date < today) {
+    db.prepare("UPDATE eligibility_master SET status = 'expired' WHERE id = ?").run(eligibility.id);
+    return res.json({ status: 'expired', message: 'Eligibility expired on ' + eligibility.termination_date, eligibility });
+  }
+
+  if (eligibility.effective_date && eligibility.effective_date > today) {
+    return res.json({ status: 'pending', message: 'Eligibility not yet effective. Starts: ' + eligibility.effective_date, eligibility });
   }
 
   const benefits = db.prepare('SELECT * FROM eligibility_benefits WHERE eligibility_id = ?').all(eligibility.id);

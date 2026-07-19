@@ -25,10 +25,26 @@ router.get('/', (req, res) => {
 // Patient 360 - full view
 router.get('/:patientId/360', (req, res) => {
   const pid = req.params.patientId;
+  const today = new Date().toISOString().slice(0, 10);
   const patient = db.prepare('SELECT * FROM patients WHERE patient_id = ?').get(pid);
   if (!patient) return res.status(404).json({ error: 'Patient not found' });
 
   const insurances = db.prepare('SELECT * FROM insurances WHERE patient_id = ?').all(pid);
+  
+  // Auto-expire eligibility based on termination_date
+  const eligibilities = db.prepare('SELECT * FROM eligibility_master WHERE patient_id = ?').all(pid);
+  const eligibility_summary = [];
+  for (const e of eligibilities) {
+    let status = e.status;
+    if (e.status === 'active' && e.termination_date && e.termination_date < today) {
+      db.prepare("UPDATE eligibility_master SET status = 'expired' WHERE id = ?").run(e.id);
+      status = 'expired';
+    } else if (e.effective_date && e.effective_date > today) {
+      status = 'pending';
+    }
+    eligibility_summary.push({ ...e, computed_status: status });
+  }
+
   const dependents = db.prepare('SELECT * FROM dependents WHERE guarantor_patient_id = ?').all(pid);
   const appointments = db.prepare('SELECT * FROM appointments WHERE patient_id = ? ORDER BY appointment_date DESC LIMIT 20').all(pid);
   const charges = db.prepare('SELECT * FROM charges WHERE patient_id = ? ORDER BY created_at DESC LIMIT 20').all(pid);
@@ -48,7 +64,7 @@ router.get('/:patientId/360', (req, res) => {
   const openRejections = rejections.filter(r => r.status !== 'closed').length;
 
   res.json({
-    patient, insurances, dependents, appointments, charges, payments,
+    patient, insurances, dependents, eligibility_summary, appointments, charges, payments,
     authorizations, arCalls, rejections, offsets, medicalRecords,
     summary: { totalCharges, totalPaid, totalOffset, totalBalance, activeAuths, openRejections,
       totalAppointments: appointments.length, totalChargesCount: charges.length, totalPaymentsCount: payments.length }

@@ -4,6 +4,7 @@ const db = require('../db');
 
 // GET /api/adjudication/queue - list all charges with status 'submitted', joined with patients and providers, including line items
 router.get('/queue', (req, res) => {
+  const today = new Date().toISOString().slice(0, 10);
   const charges = db.prepare(`
     SELECT c.*, p.first_name || ' ' || p.last_name as patient_name, p.mrn, p.dob, p.ssn, p.phone, p.address, p.city, p.state, p.zip,
            pr.first_name || ' ' || pr.last_name as provider_name, pr.npi, pr.taxonomy_code, pr.specialization
@@ -16,7 +17,23 @@ router.get('/queue', (req, res) => {
 
   const result = charges.map(charge => {
     const lineItems = db.prepare('SELECT * FROM charge_line_items WHERE charge_id = ?').all(charge.charge_id);
-    return { ...charge, line_items: lineItems };
+    let eligibility_status = charge.eligibility_status || 'unknown';
+    if (charge.insurance_id) {
+      const elig = db.prepare('SELECT * FROM eligibility_master WHERE patient_id = ? AND insurance_id = ? ORDER BY id DESC LIMIT 1').get(charge.patient_id, charge.insurance_id);
+      if (elig) {
+        if (elig.termination_date && elig.termination_date < today) {
+          eligibility_status = 'expired';
+          db.prepare("UPDATE eligibility_master SET status = 'expired' WHERE id = ?").run(elig.id);
+        } else if (elig.effective_date && elig.effective_date > today) {
+          eligibility_status = 'pending';
+        } else {
+          eligibility_status = elig.status || 'active';
+        }
+      } else {
+        eligibility_status = 'not_found';
+      }
+    }
+    return { ...charge, eligibility_status, line_items: lineItems };
   });
 
   res.json(result);

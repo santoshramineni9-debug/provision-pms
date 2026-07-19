@@ -19,6 +19,7 @@ router.get('/', (req, res) => {
 
 // Get inpatient record with UB-04 data
 router.get('/:ipId', (req, res) => {
+  const today = new Date().toISOString().slice(0, 10);
   const ip = db.prepare(`
     SELECT ip.*, p.first_name, p.last_name, p.dob, p.ssn, p.phone, p.address, p.city as p_city, p.state as p_state, p.zip as p_zip, p.mrn, p.patient_id,
            pr.first_name as prov_first, pr.last_name as prov_last, pr.npi as prov_npi, pr.taxonomy_code,
@@ -31,8 +32,25 @@ router.get('/:ipId', (req, res) => {
   `).get(req.params.ipId);
   if (!ip) return res.status(404).json({ error: 'Not found' });
 
+  let eligibility_status = 'unknown';
+  if (ip.insurance_id) {
+    const elig = db.prepare('SELECT * FROM eligibility_master WHERE patient_id = ? AND insurance_id = ? ORDER BY id DESC LIMIT 1').get(ip.patient_id, ip.insurance_id);
+    if (elig) {
+      if (elig.termination_date && elig.termination_date < today) {
+        eligibility_status = 'expired';
+        db.prepare("UPDATE eligibility_master SET status = 'expired' WHERE id = ?").run(elig.id);
+      } else if (elig.effective_date && elig.effective_date > today) {
+        eligibility_status = 'pending';
+      } else {
+        eligibility_status = elig.status || 'active';
+      }
+    } else {
+      eligibility_status = 'not_found';
+    }
+  }
+
   const ub04 = db.prepare('SELECT * FROM ub04_form_data WHERE ip_id = ?').get(req.params.ipId);
-  res.json({ ...ip, ub04: ub04 || null });
+  res.json({ ...ip, eligibility_status, ub04: ub04 || null });
 });
 
 // Create inpatient registration with UB-04
