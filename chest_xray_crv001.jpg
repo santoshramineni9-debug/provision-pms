@@ -1,0 +1,10 @@
+Sample medical document: image
+Review: CRV001
+Description: Chest X-ray PA and Lateral views
+Uploaded by: Dr. Johnson
+
+This is a placeholder document for demonstration purposes.
+In a production environment, this would contain the actual medical document.
+
+File: radiology
+Type: image/jpeg

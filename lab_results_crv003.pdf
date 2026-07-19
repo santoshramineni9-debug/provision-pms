@@ -1,0 +1,10 @@
+Sample medical document: document
+Review: CRV003
+Description: ABG, BMP, Ketones
+Uploaded by: Lab Department
+
+This is a placeholder document for demonstration purposes.
+In a production environment, this would contain the actual medical document.
+
+File: lab
+Type: application/pdf

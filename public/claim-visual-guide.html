@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claim Processing & Adjudication - Visual Guide</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#0f0f23;color:#fff;overflow:hidden}
+.slide{display:none;width:100vw;height:100vh;flex-direction:column;justify-content:center;align-items:center;padding:50px;text-align:center}
+.slide.active{display:flex}
+.s1{background:linear-gradient(135deg,#0d1b3e,#1a237e)}
+.s2{background:linear-gradient(135deg,#1a237e,#283593)}
+.s3{background:linear-gradient(135deg,#0d47a1,#1565c0)}
+.s4{background:linear-gradient(135deg,#1b5e20,#2e7d32)}
+.s5{background:linear-gradient(135deg,#4a148c,#6a1b9a)}
+.s6{background:linear-gradient(135deg,#b71c1c,#c62828)}
+.s7{background:linear-gradient(135deg,#e65100,#f57c00)}
+.s8{background:linear-gradient(135deg,#006064,#00838f)}
+.s9{background:linear-gradient(135deg,#37474f,#455a64)}
+.s10{background:linear-gradient(135deg,#0d1b3e,#1a237e)}
+.s11{background:linear-gradient(135deg,#1b5e20,#388e3c)}
+.s12{background:linear-gradient(135deg,#bf360c,#e64a19)}
+.s13{background:linear-gradient(135deg,#0d1b3e,#283593)}
+.s14{background:linear-gradient(135deg,#4a148c,#7b1fa2)}
+h1{font-size:2.6em;margin-bottom:16px;line-height:1.2}
+h2{font-size:2em;margin-bottom:14px;line-height:1.2}
+h3{font-size:1.3em;margin-bottom:10px;color:#ffca28}
+p{font-size:1.1em;color:#b0bec5;line-height:1.6;max-width:780px}
+.hl{color:#ffca28}
+.sub{font-size:0.9em;color:#78909c;margin-top:8px}
+.big-icon{font-size:3.5em;margin-bottom:16px}
+
+/* Scene boxes - simulate images */
+.scene{display:flex;gap:20px;margin:16px 0;flex-wrap:wrap;justify-content:center}
+.scard{background:rgba(255,255,255,0.06);border-radius:16px;padding:20px;min-width:280px;max-width:340px;text-align:left;border:1px solid rgba(255,255,255,0.08)}
+.scard-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.scard-icon{width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.6em;flex-shrink:0}
+.scard-title{font-size:1em;font-weight:700;color:#fff}
+.scard-sub{font-size:0.78em;color:#90a4ae}
+.scard p{font-size:0.88em;color:#aaa;line-height:1.4}
+.scard ul{list-style:none;margin-top:6px}
+.scard ul li{font-size:0.82em;color:#bbb;padding:3px 0}
+.scard ul li::before{content:'✓ ';color:#4caf50;font-weight:bold}
+
+.icon-blue{background:rgba(33,150,243,0.2);color:#2196f3}
+.icon-green{background:rgba(76,175,80,0.2);color:#4caf50}
+.icon-red{background:rgba(244,67,54,0.2);color:#f44336}
+.icon-purple{background:rgba(156,39,176,0.2);color:#ce93d8}
+.icon-orange{background:rgba(255,152,0,0.2);color:#ffc107}
+.icon-teal{background:rgba(0,150,136,0.2);color:#26a69a}
+
+/* Flow visual */
+.flow-visual{display:flex;align-items:center;gap:6px;margin:14px 0;flex-wrap:wrap;justify-content:center}
+.fstep{padding:10px 16px;border-radius:10px;font-size:0.82em;font-weight:600;white-space:nowrap;border:2px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05)}
+.farrow{font-size:1.5em;color:#ffca28}
+
+/* Scenario card */
+.scenario{background:rgba(255,255,255,0.04);border-radius:14px;padding:20px 28px;max-width:800px;margin:12px 0;text-align:left;border-left:4px solid #ffca28}
+.scenario h4{color:#ffca28;font-size:1em;margin-bottom:6px}
+.scenario p{font-size:0.92em;color:#bbb;line-height:1.5}
+.scenario b{color:#fff}
+
+/* Role cards */
+.role-row{display:flex;gap:16px;margin:12px 0;flex-wrap:wrap;justify-content:center}
+.role{width:120px;height:120px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid rgba(255,255,255,0.1);font-size:2em}
+.role-name{font-size:0.75em;color:#ccc;margin-top:4px;font-weight:600}
+.role-pcp{border-color:#4caf50;background:rgba(76,175,80,0.1)}
+.role-doc{border-color:#2196f3;background:rgba(33,150,243,0.1)}
+.role-ins{border-color:#9c27b0;background:rgba(156,39,176,0.1)}
+.role-pt{border-color:#ff9800;background:rgba(255,152,0,0.1)}
+.role-hosp{border-color:#f44336;background:rgba(244,67,54,0.1)}
+
+/* Amount visual */
+.amount-box{background:rgba(255,255,255,0.05);border-radius:12px;padding:16px 24px;text-align:center}
+.amount-box .amt{font-size:2em;font-weight:800}
+.amount-box .lbl{font-size:0.78em;color:#888;margin-top:2px}
+.amt-green{color:#4caf50}
+.amt-red{color:#f44336}
+.amt-blue{color:#2196f3}
+.amt-purple{color:#ce93d8}
+.amt-yellow{color:#ffc107}
+
+/* Denial visual */
+.deny-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin:10px 0}
+.deny-card{background:rgba(255,255,255,0.05);border-radius:10px;padding:12px 16px;min-width:160px;text-align:left;border-left:3px solid #f44336}
+.deny-card .code{font-weight:700;color:#f44336;font-size:0.9em}
+.deny-card .reason{font-size:0.82em;color:#ccc;margin-top:2px}
+.deny-card .fix{font-size:0.75em;color:#4caf50;margin-top:4px}
+
+/* Timeline */
+.timeline{display:flex;gap:0;margin:14px 0;position:relative}
+.tl-step{flex:1;text-align:center;padding:10px 8px;position:relative}
+.tl-step::after{content:'';position:absolute;top:24px;left:50%;width:100%;height:3px;background:rgba(255,255,255,0.1);z-index:0}
+.tl-step:last-child::after{display:none}
+.tl-dot{width:20px;height:20px;border-radius:50%;margin:0 auto 8px;position:relative;z-index:1;display:flex;align-items:center;justify-content:center;font-size:0.6em}
+.tl-dot.done{background:#4caf50}
+.tl-dot.active{background:#ffc107;animation:pulse2 1.5s infinite}
+.tl-dot.pending{background:#546e7a}
+.tl-dot.denied{background:#f44336}
+@keyframes pulse2{0%,100%{box-shadow:0 0 0 0 rgba(255,193,7,0.4)}50%{box-shadow:0 0 0 8px rgba(255,193,7,0)}}
+.tl-label{font-size:0.7em;color:#888}
+
+.controls{position:fixed;bottom:24px;right:24px;display:flex;gap:8px}
+.controls button{padding:8px 20px;border:none;border-radius:8px;font-size:0.9em;font-weight:600;cursor:pointer}
+.prev{background:rgba(255,255,255,0.12);color:#fff}
+.next{background:#ffca28;color:#1a237e}
+.slide-num{position:fixed;bottom:28px;left:28px;color:#546e7a;font-size:0.82em}
+.logo{position:fixed;top:16px;left:24px;font-size:0.95em;color:#ffca28;font-weight:700}
+</style>
+</head>
+<body>
+<div class="logo">Provision AR Training Center</div>
+
+<!-- S1: Title -->
+<div class="slide s1 active">
+  <div class="big-icon">&#x1F4CB;</div>
+  <h1>Claim Processing &<br><span class="hl">Claim Adjudication</span></h1>
+  <p>Visual Step-by-Step Guide with Real Scenarios</p>
+  <div class="sub">14 Slides | Use ← → Arrow Keys to Navigate</div>
+</div>
+
+<!-- S2: Patient Visits -->
+<div class="slide s2">
+  <h2>&#x1F3E5; Scenario: Patient Visits the Doctor</h2>
+  <div class="scenario">
+    <h4>&#x1F464; Meet John Smith</h4>
+    <p><b>Patient:</b> John Smith, Age 45 | <b>Insurance:</b> BCBS Gold PPO | <b>PCP:</b> Dr. Sarah Wilson</p>
+    <p>John has chest pain and visits his <b>Primary Care Doctor (PCP)</b>. Dr. Wilson examines him and orders lab tests and an ECG.</p>
+  </div>
+  <div class="role-row">
+    <div class="role role-pt">&#x1F464;<div class="role-name">Patient<br>John Smith</div></div>
+    <div class="role role-pcp">&#x1F468;&#x200D;&#x2695;&#xFE0F;<div class="role-name">PCP<br>Dr. Wilson</div></div>
+    <div class="role role-ins">&#x1F3E6;<div class="role-name">Insurance<br>BCBS PPO</div></div>
+  </div>
+  <div class="sub">Patient arrives → Gets examined → Services provided → Claim will be created</div>
+</div>
+
+<!-- S3: Claim Created -->
+<div class="slide s3">
+  <h2>&#x1F4DD; Step 1: Claim Created</h2>
+  <div class="scene">
+    <div class="scard">
+      <div class="scard-head">
+        <div class="scard-icon icon-blue">&#x1F4CB;</div>
+        <div><div class="scard-title">Claim Form (CMS-1500)</div><div class="scard-sub">Professional Services Claim</div></div>
+      </div>
+      <ul>
+        <li>Patient: John Smith</li>
+        <li>DOS: 07/15/2026</li>
+        <li>Rendering: Dr. Wilson (NPI: 1234567890)</li>
+        <li>Billing: Wilson Medical Group</li>
+        <li>Insurance: BCBS - Policy# BC-45612</li>
+      </ul>
+    </div>
+    <div class="scard">
+      <div class="scard-head">
+        <div class="scard-icon icon-green">&#x1F4DD;</div>
+        <div><div class="scard-title">Codes Assigned</div><div class="scard-sub">ICD-10 + CPT Codes</div></div>
+      </div>
+      <ul style="margin-top:8px">
+        <li><b>ICD-10:</b> R07.9 - Chest Pain</li>
+        <li><b>CPT 99214:</b> Office Visit (Level 4)</li>
+        <li><b>CPT 85025:</b> Complete Blood Count</li>
+        <li><b>CPT 80053:</b> Metabolic Panel</li>
+        <li><b>CPT 93000:</b> ECG (12-Lead)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="scenario">
+    <h4>&#x1F4B0; Total Billed Amount: $500.00</h4>
+    <p>This claim now enters the <span class="hl">Claim Processing</span> cycle.</p>
+  </div>
+</div>
+
+<!-- S4: Claim Scrubbing & Submission -->
+<div class="slide s4">
+  <h2>&#x1F50D; Step 2: Scrubbing & Submission</h2>
+  <div class="scene">
+    <div class="scard">
+      <div class="scard-head">
+        <div class="scard-icon icon-orange">&#x1F50D;</div>
+        <div><div class="scard-title">Claim Scrubbing</div><div class="scard-sub">Auto validation checks</div></div>
+      </div>
+      <ul>
+        <li style="color:#4caf50">&#x2705; Patient DOB correct</li>
+        <li style="color:#4caf50">&#x2705; Insurance ID verified</li>
+        <li style="color:#4caf50">&#x2705; NPI valid</li>
+        <li style="color:#4caf50">&#x2705; CPT/ICD match</li>
+        <li style="color:#4caf50">&#x2705; No duplicate charges</li>
+        <li><span class="hl">Clean Claim!</span></li>
+      </ul>
+    </div>
+    <div class="scard">
+      <div class="scard-head">
+        <div class="scard-icon icon-teal">&#x1F4E8;</div>
+        <div><div class="scard-title">Submitted to Clearinghouse</div><div class="scard-sub">Electronic EDI 837 Format</div></div>
+      </div>
+      <ul>
+        <li>Claim encoded as EDI 837</li>
+        <li>Sent to Clearinghouse</li>
+        <li>Clearinghouse validates</li>
+        <li>Forwards to BCBS</li>
+        <li>BCBS logs claim #CLM-5501</li>
+        <li style="color:#ffc107">Queued for Adjudication</li>
+      </ul>
+    </div>
+  </div>
+  <div class="timeline">
+    <div class="tl-step"><div class="tl-dot done">&#x2714;</div><div class="tl-label">Created</div></div>
+    <div class="tl-step"><div class="tl-dot done">&#x2714;</div><div class="tl-label">Scrubbed</div></div>
+    <div class="tl-step"><div class="tl-dot done">&#x2714;</div><div class="tl-label">Submitted</div></div>
+    <div class="tl-step"><div class="tl-dot active">&#x25CF;</div><div class="tl-label">Adjudication</div></div>
+    <div class="tl-step"><div class="tl-dot pending">&#x25CB;</div><div class="tl-label">Payment</div></div>
+  </div>
+</div>
+
+<!-- S5: Adjudication Begins -->
+<div class="slide s5">
+  <h2>&#x1F50D; Adjudication: Insurance Reviews</h2>
+  <p>BCBS now reviews the claim. They check 5 things:</p>
+  <div class="scene">
+    <div class="scard" style="border-left:3px solid #4caf50">
+      <div class="scard-head">
+        <div class="scard-icon icon-green">&#x2705;</div>
+        <div><div class="scard-title">1. Eligibility</div></div>
+      </div>
+      <p>Was John insured on 07/15/2026?<br><b style="color:#4caf50">YES - Active BCBS Gold PPO</b></p>
+    </div>
+    <div class="scard" style="border-left:3px solid #4caf50">
+      <div class="scard-head">
+        <div class="scard-icon icon-green">&#x2705;</div>
+        <div><div class="scard-title">2. Coverage</div></div>
+      </div>
+      <p>Are these services covered?<br><b style="color:#4caf50">YES - Office visit + Labs + ECG covered</b></p>
+    </div>
+    <div class="scard" style="border-left:3px solid #4caf50">
+      <div class="scard-head">
+        <div class="scard-icon icon-green">&#x2705;</div>
+        <div><div class="scard-title">3. Prior Auth</div></div>
+      </div>
+      <p>Was authorization needed?<br><b style="color:#4caf50">NO - Not required for these services</b></p>
+    </div>
+    <div class="scard" style="border-left:3px solid #4caf50">
+      <div class="scard-head">
+        <div class="scard-icon icon-green">&#x2705;</div>
+        <div><div class="scard-title">4. In-Network</div></div>
+      </div>
+      <p>Is Dr. Wilson in-network?<br><b style="color:#4caf50">YES - BCBS contracted provider</b></p>
+    </div>
+    <div class="scard" style="border-left:3px solid #4caf50">
+      <div class="scard-head">
+        <div class="scard-icon icon-green">&#x2705;</div>
+        <div><div class="scard-title">5. Medical Necessity</div></div>
+      </div>
+      <p>Does diagnosis match procedure?<br><b style="color:#4caf50">YES - Chest pain requires these tests</b></p>
+    </div>
+  </div>
+</div>
+
+<!-- S6: Payment Calculation -->
+<div class="slide s6">
+  <h2>&#x1F4B0; Adjudication Result: PAID!</h2>
+  <p>All checks passed. Insurance calculates payment:</p>
+  <div class="scene" style="gap:16px">
+    <div class="amount-box">
+      <div class="amt amt-blue">$500</div>
+      <div class="lbl">Billed Amount</div>
+    </div>
+    <div style="font-size:2em;color:#ffca28">→</div>
+    <div class="amount-box">
+      <div class="amt amt-purple">$400</div>
+      <div class="lbl">Allowed Amount</div>
+    </div>
+    <div style="font-size:2em;color:#ffca28">→</div>
+    <div class="amount-box">
+      <div class="amt amt-green">$320</div>
+      <div class="lbl">Insurance Pays (80%)</div>
+    </div>
+    <div style="font-size:2em;color:#ffca28">→</div>
+    <div class="amount-box">
+      <div class="amt amt-yellow">$80</div>
+      <div class="lbl">Patient Owes (20%)</div>
+    </div>
+  </div>
+  <div class="scenario">
+    <h4>&#x1F4CA; Breakdown</h4>
+    <p><b>Billed:</b> $500 &nbsp;|&nbsp; <b>Allowed:</b> $400 &nbsp;|&nbsp; <b>Write-off:</b> <span style="color:#f44336">$100</span> (contractual adjustment) &nbsp;|&nbsp; <b>Insurance:</b> <span style="color:#4caf50">$320</span> &nbsp;|&nbsp; <b>Patient:</b> <span style="color:#ffc107">$80</span></p>
+  </div>
+  <div class="timeline">
+    <div class="tl-step"><div class="tl-dot done">&#x2714;</div><div class="tl-label">Created</div></div>
+    <div class="tl-step"><div class="tl-dot done">&#x2714;</div><div class="tl-label">Scrubbed</div></div>
+    <div class="tl-step"><div class="tl-dot done">&#x2714;</div><div class="tl-label">Submitted</div></div>
+    <div class="tl-step"><div class="tl-dot done">&#x2714;</div><div class="tl-label">Adjudicated</div></div>
+    <div class="tl-step"><div class="tl-dot done">&#x2714;</div><div class="tl-label">Paid</div></div>
+  </div>
+</div>
+
+<!-- S7: ERA/EOB Received -->
+<div class="slide s7">
+  <h2>&#x1F4C8; ERA/EOB Received</h2>
+  <div class="scene">
+    <div class="scard" style="border-left:3px solid #2196f3">
+      <div class="scard-head">
+        <div class="scard-icon icon-blue">&#x1F4F1;</div>
+        <div><div class="scard-title">ERA (to Provider)</div><div class="scard-sub">EDI 835 - Electronic Remittance</div></div>
+      </div>
+      <ul>
+        <li>Claim# CLM-5501: PAID</li>
+        <li>Paid Amount: $320.00</li>
+        <li>Patient Resp: $80.00</li>
+        <li>Check# EFT-78945</li>
+        <li>Posted to account</li>
+      </ul>
+    </div>
+    <div class="scard" style="border-left:3px solid #9c27b0">
+      <div class="scard-head">
+        <div class="scard-icon icon-purple">&#x1F4C4;</div>
+        <div><div class="scard-title">EOB (to Patient)</div><div class="scard-sub">Explanation of Benefits</div></div>
+      </div>
+      <ul>
+        <li>We paid: $320.00</li>
+        <li>Your copay/coinsurance: $80.00</li>
+        <li>Your deductible remaining: $120</li>
+        <li>Send payment to provider</li>
+      </ul>
+    </div>
+  </div>
+  <div class="scenario">
+    <h4>&#x1F4AC; In AR Calling, We Receive ERA Data</h4>
+    <p>We review the ERA to confirm payment was correct. If underpaid or denied, we <b>call BCBS</b> to follow up.</p>
+  </div>
+</div>
+
+<!-- S8: DENIED Scenario -->
+<div class="slide s8">
+  <h2>&#x274C; Scenario 2: Claim DENIED!</h2>
+  <div class="scenario" style="border-left-color:#f44336">
+    <h4>&#x1F464; New Patient: Maria Garcia</h4>
+    <p><b>Patient:</b> Maria Garcia | <b>Insurance:</b> Aetna PPO | <b>Provider:</b> Dr. James Lee (Specialist)</p>
+    <p>Maria was referred to a <b>Cardiologist (Dr. Lee)</b> by her PCP. But Dr. Lee's office <b>forgot to get prior authorization</b> from Aetna.</p>
+  </div>
+  <div class="flow-visual">
+    <span class="fstep" style="border-color:#f44336">Claim Sent: $800</span>
+    <span class="farrow">→</span>
+    <span class="fstep" style="border-color:#f44336">Adjudication</span>
+    <span class="farrow">→</span>
+    <span class="fstep" style="border-color:#f44336;background:rgba(244,67,54,0.15)">&#x274C; DENIED - CO-197</span>
+  </div>
+  <div class="deny-row">
+    <div class="deny-card">
+      <div class="code">CO-197</div>
+      <div class="reason">Precertification Missing</div>
+      <div class="fix">Fix: Get prior auth & resubmit</div>
+    </div>
+    <div class="deny-card">
+      <div class="code">$0 Paid</div>
+      <div class="reason">Full denial - no payment issued</div>
+      <div class="fix">Fix: Appeal with auth number</div>
+    </div>
+  </div>
+</div>
+
+<!-- S9: Fixing the Denial -->
+<div class="slide s9">
+  <h2>&#x1F504; AR Calling: Fixing the Denial</h2>
+  <div class="scene">
+    <div class="scard" style="border-left:3px solid #ffc107">
+      <div class="scard-head">
+        <div class="scard-icon icon-orange">&#x1F4AC;</div>
+        <div><div class="scard-title">Step 1: Call Insurance</div><div class="scard-sub">Aetna - 1-800-XXX-XXXX</div></div>
+      </div>
+      <ul>
+        <li>Verify denial reason CO-197</li>
+        <li>Ask if auth can be obtained retroactively</li>
+        <li>Get reference#: REF-45678</li>
+        <li>Note: Call back in 5 business days</li>
+      </ul>
+    </div>
+    <div class="scard" style="border-left:3px solid #4caf50">
+      <div class="scard-head">
+        <div class="scard-icon icon-green">&#x1F4DD;</div>
+        <div><div class="scard-title">Step 2: Get Authorization</div><div class="scard-sub">Contact PCP's Office</div></div>
+      </div>
+      <ul>
+        <li>Call Dr. Wilson (PCP)</li>
+        <li>Request retro auth for Dr. Lee visit</li>
+        <li>Auth# AUTH-99887 issued</li>
+        <li>Valid: 07/10/2026 - 08/10/2026</li>
+      </ul>
+    </div>
+    <div class="scard" style="border-left:3px solid #2196f3">
+      <div class="scard-head">
+        <div class="scard-icon icon-blue">&#x1F4E8;</div>
+        <div><div class="scard-title">Step 3: Resubmit Claim</div><div class="scard-sub">With Auth Number Added</div></div>
+      </div>
+      <ul>
+        <li>Add auth# AUTH-99887</li>
+        <li>Resubmit corrected claim</li>
+        <li>Mark as "Corrected Claim"</li>
+        <li>Follow up in 14 days</li>
+      </ul>
+    </div>
+  </div>
+  <div class="scenario">
+    <h4>&#x2705; Result: Claim Reprocessed → PAID $640</h4>
+    <p><b>Revenue Recovered:</b> <span style="color:#4caf50">$640</span> that would have been lost!</p>
+  </div>
+</div>
+
+<!-- S10: Different Denial Types -->
+<div class="slide s10">
+  <h2>&#x1F6AB; Common Denial Types - Visual Guide</h2>
+  <div class="deny-row" style="margin-bottom:10px">
+    <div class="deny-card" style="border-left-color:#f44336">
+      <div class="code">CO-4</div>
+      <div class="reason">Procedure Code Issue</div>
+      <div class="fix">→ Check for duplicate/bundled codes</div>
+    </div>
+    <div class="deny-card" style="border-left-color:#ff9800">
+      <div class="code">CO-16</div>
+      <div class="reason">Missing Claim Info</div>
+      <div class="fix">→ Add missing diagnosis/referral</div>
+    </div>
+    <div class="deny-card" style="border-left-color:#ffc107">
+      <div class="code">CO-29</div>
+      <div class="reason">Filing Deadline Passed</div>
+      <div class="fix">→ Appeal with valid reason</div>
+    </div>
+  </div>
+  <div class="deny-row" style="margin-bottom:10px">
+    <div class="deny-card" style="border-left-color:#9c27b0">
+      <div class="code">CO-197</div>
+      <div class="reason">No Prior Authorization</div>
+      <div class="fix">→ Get auth retroactively or appeal</div>
+    </div>
+    <div class="deny-card" style="border-left-color:#2196f3">
+      <div class="code">CO-23</div>
+      <div class="reason">Exceeds Auth Amount</div>
+      <div class="fix">→ Adjust to auth amount or appeal</div>
+    </div>
+    <div class="deny-card" style="border-left-color:#607d8b">
+      <div class="code">CO-109</div>
+      <div class="reason">Provider Not in Network</div>
+      <div class="fix">→ Verify network status or balance bill</div>
+    </div>
+  </div>
+  <div class="deny-row">
+    <div class="deny-card" style="border-left-color:#4caf50">
+      <div class="code">PR-1</div>
+      <div class="reason">Patient Deductible</div>
+      <div class="fix">→ Bill patient for deductible</div>
+    </div>
+    <div class="deny-card" style="border-left-color:#4caf50">
+      <div class="code">PR-2</div>
+      <div class="reason">Patient Coinsurance</div>
+      <div class="fix">→ Bill patient for 20%</div>
+    </div>
+    <div class="deny-card" style="border-left-color:#4caf50">
+      <div class="code">PR-3</div>
+      <div class="reason">Patient Copay</div>
+      <div class="fix">→ Bill patient for copay amount</div>
+    </div>
+  </div>
+</div>
+
+<!-- S11: Processing vs Adjudication Visual -->
+<div class="slide s11">
+  <h2>&#x1F500; Processing vs Adjudication</h2>
+  <div class="scene" style="gap:30px">
+    <div class="scard" style="min-width:320px;border:2px solid #2196f3">
+      <div class="scard-head">
+        <div class="scard-icon icon-blue">&#x2699;&#xFE0F;</div>
+        <div><div class="scard-title">Claim Processing</div><div class="scard-sub">The ENTIRE Journey</div></div>
+      </div>
+      <ul>
+        <li>Patient visit → Code assignment</li>
+        <li>Charge entry → Claim creation</li>
+        <li>Scrubbing → Submission</li>
+        <li>Tracking → Follow-up</li>
+        <li>Payment posting → Close</li>
+      </ul>
+      <p style="margin-top:8px;color:#2196f3"><b>Who: Provider + Payer + AR Team</b></p>
+    </div>
+    <div class="scard" style="min-width:320px;border:2px solid #ce93d8">
+      <div class="scard-head">
+        <div class="scard-icon icon-purple">&#x1F50D;</div>
+        <div><div class="scard-title">Adjudication</div><div class="scard-sub">Insurance Decision ONLY</div></div>
+      </div>
+      <ul>
+        <li>Check eligibility</li>
+        <li>Check coverage</li>
+        <li>Verify auth & network</li>
+        <li>Calculate payment</li>
+        <li>Decide: Pay / Deny / Partial</li>
+      </ul>
+      <p style="margin-top:8px;color:#ce93d8"><b>Who: Insurance/Payer ONLY</b></p>
+    </div>
+  </div>
+  <div class="scenario">
+    <h4>&#x1F4A1; Key Difference</h4>
+    <p><b>Processing</b> = Everything that happens &nbsp;|&nbsp; <b>Adjudication</b> = One step inside processing (the insurance review)</p>
+  </div>
+</div>
+
+<!-- S12: Complete Flow -->
+<div class="slide s12">
+  <h2>&#x1F4CB; Complete Claim Flow - All Steps</h2>
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:900px;margin:10px auto">
+    <div class="flow-visual" style="gap:6px">
+      <div class="fstep" style="border-color:#2196f3">&#x1F3E5; Patient Visit</div>
+      <div class="farrow">→</div>
+      <div class="fstep" style="border-color:#2196f3">&#x1F4DD; Code Assignment</div>
+      <div class="farrow">→</div>
+      <div class="fstep" style="border-color:#2196f3">&#x1F4CB; Charge Entry</div>
+      <div class="farrow">→</div>
+      <div class="fstep" style="border-color:#2196f3">&#x1F4E8; Claim Submitted</div>
+    </div>
+    <div style="text-align:center;font-size:0.8em;color:#ffca28">─── Claim Processing (Provider Side) ───</div>
+    <div class="flow-visual" style="gap:6px">
+      <div class="fstep" style="border-color:#9c27b0">&#x1F50D; Insurance Reviews</div>
+      <div class="farrow">→</div>
+      <div class="fstep" style="border-color:#9c27b0;background:rgba(156,39,176,0.15)">&#x2B50; ADJUDICATION</div>
+      <div class="farrow">→</div>
+      <div class="fstep" style="border-color:#4caf50">&#x2705; PAID</div>
+      <div class="farrow">/</div>
+      <div class="fstep" style="border-color:#f44336">&#x274C; DENIED</div>
+    </div>
+    <div style="text-align:center;font-size:0.8em;color:#ffca28">─── Insurance Decision ───</div>
+    <div class="flow-visual" style="gap:6px">
+      <div class="fstep" style="border-color:#ffc107">&#x1F4C8; ERA/EOB Received</div>
+      <div class="farrow">→</div>
+      <div class="fstep" style="border-color:#ffc107">&#x1F4B0; Payment Posted</div>
+      <div class="farrow">→</div>
+      <div class="fstep" style="border-color:#4caf50">&#x1F4B3; Patient Billed</div>
+      <div class="farrow">→</div>
+      <div class="fstep" style="border-color:#4caf50">&#x2714; Claim Closed</div>
+    </div>
+    <div style="text-align:center;font-size:0.8em;color:#ffca28">─── Claim Processing (Resolution) ───</div>
+  </div>
+</div>
+
+<!-- S13: AR Caller Role -->
+<div class="slide s13">
+  <h2>&#x1F4AC; Your Role as an AR Caller</h2>
+  <div class="scene">
+    <div class="scard" style="border-left:3px solid #4caf50">
+      <div class="scard-head">
+        <div class="scard-icon icon-green">&#x1F4CA;</div>
+        <div><div class="scard-title">Monitor Claims</div></div>
+      </div>
+      <ul>
+        <li>Check claim status daily</li>
+        <li>Identify unpaid claims</li>
+        <li>Track aging (0-30, 30-60, 60-90+)</li>
+        <li>Prioritize high-value claims</li>
+      </ul>
+    </div>
+    <div class="scard" style="border-left:3px solid #ffc107">
+      <div class="scard-head">
+        <div class="scard-icon icon-orange">&#x1F4AC;</div>
+        <div><div class="scard-title">Follow Up</div></div>
+      </div>
+      <ul>
+        <li>Call insurance for status</li>
+        <li>Resolve denials</li>
+        <li>Request reprocessing</li>
+        <li>File appeals if needed</li>
+      </ul>
+    </div>
+    <div class="scard" style="border-left:3px solid #2196f3">
+      <div class="scard-head">
+        <div class="scard-icon icon-blue">&#x1F4DD;</div>
+        <div><div class="scard-title">Document</div></div>
+      </div>
+      <ul>
+        <li>Log every call</li>
+        <li>Record reference numbers</li>
+        <li>Update claim status</li>
+        <li>Track follow-up dates</li>
+      </ul>
+    </div>
+    <div class="scard" style="border-left:3px solid #9c27b0">
+      <div class="scard-head">
+        <div class="scard-icon icon-purple">&#x1F4B0;</div>
+        <div><div class="scard-title">Recover Revenue</div></div>
+      </div>
+      <ul>
+        <li>Maximize collections</li>
+        <li>Reduce denial rate</li>
+        <li>Improve cash flow</li>
+        <li>Meet monthly targets</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- S14: Denial - Non-Covered Services (Patient) -->
+<div class="slide s6">
+  <h2>&#x274C; Denial Type: Non-Covered Services (Patient)</h2>
+  <div class="scenario" style="border-left-color:#f44336">
+    <h4>Status Code: <span style="color:#f44336">NCS</span> - Non-Covered Services</h4>
+    <p>Insurance denied the claim because the <b>service is not covered under patient's plan</b>. This could be a non-covered diagnosis or procedure.</p>
+  </div>
+  <div class="scene">
+    <div class="scard" style="border-left:3px solid #ffc107">
+      <div class="scard-head">
+        <div class="scard-icon icon-orange">&#x1F4AC;</div>
+        <div><div class="scard-title">Questions to Ask Insurance</div><div class="scard-sub">5 Key Questions</div></div>
+      </div>
+      <ul>
+        <li><b>1.</b> May I have the <span class="hl">denial date</span> and <span class="hl">claim number</span>?</li>
+        <li><b>2.</b> Which services are not covered under this plan?</li>
+        <li><b>3.</b> Can we appeal with medical records? Get fax# or mailing address</li>
+        <li><b>4.</b> Does this patient have any <span class="hl">other insurance</span>?</li>
+        <li><b>5.</b> Could you <span class="hl">fax me an EOB</span>?</li>
+      </ul>
+    </div>
+    <div class="scard" style="border-left:3px solid #4caf50">
+      <div class="scard-head">
+        <div class="scard-icon icon-green">&#x2699;&#xFE0F;</div>
+        <div><div class="scard-title">Action to Take</div><div class="scard-sub">Next Steps</div></div>
+      </div>
+      <ul>
+        <li style="font-size:0.95em;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1)"><b style="color:#4caf50">Bill Secondary Payer</b> if other insurance exists</li>
+        <li style="font-size:0.95em;padding:8px 0"><b style="color:#ffc107">Bill Patient</b> if no other insurance available</li>
+      </ul>
+      <div style="background:rgba(244,67,54,0.1);padding:12px;border-radius:8px;margin-top:10px;text-align:center">
+        <span style="font-size:0.85em;color:#f44336;font-weight:700">Status Code: NCS</span><br>
+        <span style="font-size:0.75em;color:#888">Non-Covered Services</span>
+      </div>
+    </div>
+  </div>
+  <div class="scenario" style="border-left-color:#ff9800">
+    <h4>&#x1F4A1; Easy Way to Remember</h4>
+    <p><b>NCS = Patient's plan doesn't cover it</b><br>→ Check for <b>other insurance</b> → If none → <b>Bill the patient</b></p>
+  </div>
+</div>
+
+<!-- S15: Denial - Non-Covered Services (Provider) -->
+<div class="slide s8">
+  <h2>&#x274C; Denial Type: Non-Covered Services (Provider)</h2>
+  <div class="scenario" style="border-left-color:#f44336">
+    <h4>Status Code: <span style="color:#f44336">NCS</span> - Non-Covered Services</h4>
+    <p>Insurance denied because the <b>service is not covered for this specific provider</b>. Provider may be out-of-network or not credentialed for this service.</p>
+  </div>
+  <div class="scene">
+    <div class="scard" style="border-left:3px solid #ffc107">
+      <div class="scard-head">
+        <div class="scard-icon icon-orange">&#x1F4AC;</div>
+        <div><div class="scard-title">Questions to Ask Insurance</div><div class="scard-sub">4 Key Questions</div></div>
+      </div>
+      <ul>
+        <li><b>1.</b> What is the <span class="hl">denial date</span> and <span class="hl">claim number</span>?</li>
+        <li><b>2.</b> Which services are not covered for <b>this provider</b>?</li>
+        <li><b>3.</b> Can we appeal with medical records? If yes, request insurance to <span class="hl">reprocess</span></li>
+        <li><b>4.</b> Could you <span class="hl">fax me an EOB</span>?</li>
+      </ul>
+    </div>
+    <div class="scard" style="border-left:3px solid #f44336">
+      <div class="scard-head">
+        <div class="scard-icon icon-red">&#x2699;&#xFE0F;</div>
+        <div><div class="scard-title">Action to Take</div><div class="scard-sub">Next Steps</div></div>
+      </div>
+      <ul>
+        <li style="font-size:0.95em;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1)"><b style="color:#f44336">Escalate to Coding Team</b> for review</li>
+        <li style="font-size:0.95em;padding:8px 0">Check if provider needs <b>credentialing</b></li>
+        <li style="font-size:0.95em;padding:8px 0">May need <b>corrected claim</b> with different provider info</li>
+      </ul>
+      <div style="background:rgba(244,67,54,0.1);padding:12px;border-radius:8px;margin-top:10px;text-align:center">
+        <span style="font-size:0.85em;color:#f44336;font-weight:700">Status Code: NCS</span><br>
+        <span style="font-size:0.75em;color:#888">Non-Covered Services (Provider)</span>
+      </div>
+    </div>
+  </div>
+  <div class="scenario" style="border-left-color:#ff9800">
+    <h4>&#x1F4A1; Easy Way to Remember</h4>
+    <p><b>NCS (Provider) = Provider issue, not patient</b><br>→ <b>Escalate to Coding</b> → Check provider network status → Fix provider info → Resubmit</p>
+  </div>
+</div>
+
+<!-- S16: NCS Side by Side -->
+<div class="slide s5">
+  <h2>&#x1F500; NCS: Patient vs Provider - Side by Side</h2>
+  <div class="table-slide" style="max-width:900px">
+    <table>
+      <tr><th style="width:25%">Aspect</th><th style="width:37%">NCS - Patient</th><th style="width:37%">NCS - Provider</th></tr>
+      <tr><td><b>Reason</b></td><td>Service not covered under patient's plan</td><td>Service not covered for this specific provider</td></tr>
+      <tr><td><b>Root Cause</b></td><td>Plan limitation or excluded diagnosis</td><td>Provider out-of-network or not credentialed</td></tr>
+      <tr><td><b>Questions</b></td><td>5 questions (see slide 14)</td><td>4 questions (see slide 15)</td></tr>
+      <tr><td><b>Action</b></td><td style="color:#ffc107"><b>Bill Secondary / Bill Patient</b></td><td style="color:#f44336"><b>Escalate to Coding</b></td></tr>
+      <tr><td><b>Follow-up</b></td><td>Check other insurance → Patient responsibility</td><td>Check network status → Credentialing → Resubmit</td></tr>
+      <tr><td><b>Key Question</b></td><td>"Does patient have other insurance?"</td><td>"Is provider in-network for this service?"</td></tr>
+      <tr><td><b>EOB Needed?</b></td><td>Yes - always request EOB</td><td>Yes - always request EOB</td></tr>
+    </table>
+  </div>
+  <div class="flow-visual" style="margin-top:14px">
+    <span class="fstep" style="border-color:#f44336">&#x274C; NCS Denial</span>
+    <span class="farrow">→</span>
+    <span class="fstep" style="border-color:#ffc107">&#x1F50D; Check: Patient or Provider?</span>
+    <span class="farrow">→</span>
+    <span class="fstep" style="border-color:#2196f3">&#x1F4AC; Ask the Right Questions</span>
+    <span class="farrow">→</span>
+    <span class="fstep" style="border-color:#4caf50">&#x2699;&#xFE0F; Take Action</span>
+  </div>
+</div>
+
+<!-- S17: Key Takeaway -->
+<div class="slide s1">
+  <div class="big-icon">&#x1F393;</div>
+  <h1><span class="hl">Remember NCS</span></h1>
+  <p><b>NCS = Non-Covered Services</b></p>
+  <div class="scene" style="margin-top:10px">
+    <div class="scard" style="border:2px solid #ffc107;min-width:280px">
+      <div class="scard-head">
+        <div class="scard-icon icon-orange">&#x1F464;</div>
+        <div><div class="scard-title">NCS - Patient</div></div>
+      </div>
+      <p><b style="color:#ffc107">Bill Secondary Payer / Patient</b><br>Ask 5 questions + Request EOB</p>
+    </div>
+    <div class="scard" style="border:2px solid #f44336;min-width:280px">
+      <div class="scard-head">
+        <div class="scard-icon icon-red">&#x1F468;&#x200D;&#x2695;&#xFE0F;</div>
+        <div><div class="scard-title">NCS - Provider</div></div>
+      </div>
+      <p><b style="color:#f44336">Escalate to Coding</b><br>Ask 4 questions + Request EOB</p>
+    </div>
+  </div>
+  <div class="scenario" style="max-width:650px;margin-top:14px">
+    <h4>&#x1F4A1; Golden Rule</h4>
+    <p><b>Always ask for EOB</b> in every denial call.<br><b>Always get reference number</b> before hanging up.<br><b>Always document</b> the call details.</p>
+  </div>
+  <div class="sub" style="margin-top:14px">Provision AR Training Center | Boduppal, Hyderabad | 7095-101-102</div>
+</div>
+
+<!-- S18: Final Takeaway -->
+<div class="slide s9">
+  <div class="big-icon">&#x1F393;</div>
+  <h1><span class="hl">Complete Summary</span></h1>
+  <p><b>Claim Processing</b> = Full journey from visit to payment<br><b>Claim Adjudication</b> = Insurance reviews and decides (pay/deny)<br><b>NCS Denial</b> = Non-Covered Services (Patient or Provider)<br><b>AR Calling</b> = You follow up to recover revenue!</p>
+  <div class="sub" style="margin-top:20px">Provision AR Training Center | Boduppal, Hyderabad | 7095-101-102</div>
+</div>
+
+<div class="controls">
+  <button class="prev" onclick="changeSlide(-1)">&#8592; Prev</button>
+  <button class="next" onclick="changeSlide(1)">Next &#8594;</button>
+</div>
+<div class="slide-num" id="slideNum">1 / 18</div>
+
+<script>
+var current=0;var slides=document.querySelectorAll('.slide');
+function changeSlide(n){slides[current].classList.remove('active');current=(current+n+slides.length)%slides.length;slides[current].classList.add('active');document.getElementById('slideNum').textContent=(current+1)+' / '+slides.length}
+document.addEventListener('keydown',function(e){if(e.key==='ArrowRight'||e.key===' ')changeSlide(1);if(e.key==='ArrowLeft')changeSlide(-1)});
+</script>
+</body>
+</html>
