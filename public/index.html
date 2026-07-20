@@ -11050,19 +11050,21 @@ function codingClearSearch() {
       deferredPrompt.userChoice.then(r => { deferredPrompt = null; });
       return;
     }
-    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    var isAndroid = /Android/.test(navigator.userAgent);
     var msg = '';
-    if (isIOS) {
-      msg = '<b>Install on iPhone:</b><br><br>1. Tap the <b>Share</b> button (&#8984;)<br>2. Scroll down &#8594; <b>Add to Home Screen</b><br>3. Tap <b>Add</b>';
-    } else if (isAndroid) {
-      msg = '<b>Install on Android:</b><br><br>1. Tap the <b>3 dots</b> menu (&#8942;)<br>2. Tap <b>Install app</b> or <b>Add to Home Screen</b>';
-    } else {
-      msg = '<b>Install on your phone:</b><br><br>1. Open this URL on your phone<br>2. The browser will prompt you to install<br><br>Or tap the <b>Share</b> button &#8594; <b>Add to Home Screen</b>';
-    }
+    msg += '<div style="text-align:center;margin-bottom:16px"><b style="font-size:16px;color:#1a237e">📱 Install Provision PMS App</b></div>';
+    msg += '<div style="text-align:left;background:#f5f5f5;padding:14px;border-radius:8px;margin-bottom:12px">';
+    msg += '<b>iPhone (Safari):</b><br>1. Tap <b>Share</b> button (□↑)<br>2. Tap <b>"Add to Home Screen"</b><br>3. Tap <b>Add</b>';
+    msg += '</div>';
+    msg += '<div style="text-align:left;background:#f5f5f5;padding:14px;border-radius:8px;margin-bottom:12px">';
+    msg += '<b>Android (Chrome):</b><br>1. Tap <b>3 dots</b> menu (⋮)<br>2. Tap <b>"Install app"</b> or <b>"Add to Home Screen"</b>';
+    msg += '</div>';
+    msg += '<div style="text-align:left;background:#f5f5f5;padding:14px;border-radius:8px;margin-bottom:12px">';
+    msg += '<b>Desktop (Chrome/Edge):</b><br>1. Click <b>Install</b> icon in address bar<br>2. Or: <b>⋮</b> menu → <b>"Install App"</b>';
+    msg += '</div>';
+    msg += '<div style="font-size:11px;color:#888;margin-bottom:12px">After install, the app works offline and launches from your home screen.</div>';
     var overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center';
-    overlay.innerHTML = '<div style="background:#fff;border-radius:12px;padding:24px;max-width:380px;width:90%;text-align:center;font-size:14px;line-height:1.6;box-shadow:0 8px 32px rgba(0,0,0,0.3)">' + msg + '<br><button onclick="this.closest(\'div[style*=fixed]\').remove()" style="margin-top:16px;background:#1a237e;color:#fff;border:none;padding:10px 28px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">OK</button></div>';
+    overlay.innerHTML = '<div style="background:#fff;border-radius:12px;padding:24px;max-width:380px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.3)">' + msg + '<div style="text-align:center"><button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:#1a237e;color:#fff;border:none;padding:10px 28px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">OK</button></div></div>';
     document.body.appendChild(overlay);
     overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
   };
