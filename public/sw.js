@@ -1,5 +1,5 @@
-const CACHE_NAME = 'provision-pms-v1';
-const PRECACHE = ['/', '/index.html', '/css/style.css', '/images/healthcare-logo.svg', '/manifest.json'];
+const CACHE_NAME = 'provision-pms-v2';
+const PRECACHE = ['css/style.css', 'images/healthcare-logo.svg', 'manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(PRECACHE)).then(() => self.skipWaiting()));

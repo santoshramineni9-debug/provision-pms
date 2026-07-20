@@ -7,11 +7,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a237e">
   <meta name="description" content="Provision AR Calling - Practice Management System">
-  <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="/images/healthcare-logo.svg">
-  <link rel="icon" type="image/svg+xml" href="/images/healthcare-logo.svg">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="images/healthcare-logo.svg">
+  <link rel="icon" type="image/svg+xml" href="images/healthcare-logo.svg">
   <title>Provision PMS - Practice Management System</title>
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
@@ -19,7 +19,7 @@
 <div id="appLoginOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,#1a237e 0%,#0d47a1 50%,#1565c0 100%);z-index:9999;display:flex;align-items:center;justify-content:center">
   <div style="background:white;padding:35px 30px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.3);width:380px;max-width:95%">
     <div style="text-align:center;margin-bottom:20px">
-      <img src="/images/healthcare-logo.svg" alt="Logo" style="width:160px;margin:0 auto 10px;display:block">
+      <img src="images/healthcare-logo.svg" alt="Logo" style="width:160px;margin:0 auto 10px;display:block">
       <h2 style="color:#1a237e;margin:0;font-size:18px">Provision AR Calling</h2>
       <p style="color:#888;font-size:12px;margin-top:4px">Practice Management System</p>
     </div>
@@ -36,7 +36,7 @@
 <div class="header" id="appHeader" style="display:none">
   <div style="display:flex;align-items:center;gap:10px">
     <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileNav()">&#9776;</button>
-    <img src="/images/healthcare-logo.svg" alt="Provision AR Calling" style="height:36px;width:auto;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3))">
+    <img src="images/healthcare-logo.svg" alt="Provision AR Calling" style="height:36px;width:auto;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3))">
     <span class="header-title">Provision PMS</span>
   </div>
   <div id="headerUserArea" style="display:flex;align-items:center;gap:8px"></div>
@@ -51,7 +51,7 @@
 <div id="mobileNavOverlay" class="mobile-nav-overlay" onclick="toggleMobileNav()"></div>
 <div id="mobileNavDrawer" class="mobile-nav-drawer">
   <div class="mobile-nav-header">
-    <img src="/images/healthcare-logo.svg" alt="Logo" style="height:40px">
+    <img src="images/healthcare-logo.svg" alt="Logo" style="height:40px">
     <span>Provision PMS</span>
     <button class="mobile-nav-close" onclick="toggleMobileNav()">&times;</button>
   </div>
@@ -6137,7 +6137,7 @@ function generateInvoice(id) {
     var invDate = new Date().toLocaleDateString();
     var html = '<div id="printArea" style="background:white;padding:30px;max-width:700px;margin:0 auto">';
     html += '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1a237e;padding-bottom:15px;margin-bottom:20px">';
-    html += '<div><img src="/images/logo.svg" style="height:40px;margin-bottom:5px"><div style="font-size:10px;color:#888">Provision AR Calling - Practice Management System</div></div>';
+    html += '<div><img src="images/logo.svg" style="height:40px;margin-bottom:5px"><div style="font-size:10px;color:#888">Provision AR Calling - Practice Management System</div></div>';
     html += '<div style="text-align:right"><h2 style="color:#1a237e;margin:0">INVOICE</h2><div style="font-size:12px;color:#555">' + invNum + '</div><div style="font-size:11px;color:#888">' + invDate + '</div></div></div>';
     html += '<div style="display:flex;justify-content:space-between;margin-bottom:20px">';
     html += '<div><b>Bill To:</b><br><span style="font-size:13px">' + (inv.full_name || '') + '</span><br><span style="font-size:11px;color:#666">' + inv.email + '</span></div>';
