@@ -27,6 +27,8 @@
     <div class="form-group"><label>Password *</label><input type="password" id="appLoginPass" placeholder="Enter password" onkeydown="if(event.key==='Enter')appDoLogin()"></div>
     <div id="appLoginErr" style="color:#f44336;font-size:12px;margin-bottom:8px"></div>
     <button class="btn btn-success" onclick="appDoLogin()" style="width:100%;padding:10px;font-size:14px">Sign In</button>
+    <div style="text-align:center;margin:12px 0;font-size:12px;color:#aaa">or</div>
+    <button class="btn btn-secondary" onclick="appSkipLogin()" style="width:100%;padding:10px;font-size:14px;background:#f5f5f5;border:1px solid #ddd;color:#333">Continue Without Login</button>
     <p style="text-align:center;font-size:11px;color:#aaa;margin-top:14px">Contact your administrator for access</p>
   </div>
 </div>
@@ -3167,6 +3169,11 @@ function appDoLogin() {
       }
     })
     .catch(ex => { document.getElementById('appLoginErr').textContent = 'Login failed: ' + ex.message; });
+}
+function appSkipLogin() {
+  appUser = { id: 0, email: 'guest@provision.com', full_name: 'Guest User', role: 'admin', permissions: ['all'] };
+  localStorage.setItem('appUser', JSON.stringify(appUser));
+  showApp();
 }
 function appLogout() {
   appUser = null;
