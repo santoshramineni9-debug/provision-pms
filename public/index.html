@@ -11026,7 +11026,7 @@ function codingClearSearch() {
 // ============ PWA: Service Worker + Install + Update ============
 (function() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').then(reg => {
+    navigator.serviceWorker.register('sw.js').then(reg => {
       reg.addEventListener('updatefound', () => {
         const nw = reg.installing;
         if (nw) nw.addEventListener('statechange', () => {
@@ -11118,7 +11118,7 @@ function buildMobileNav() {
   h += '</div>';
   document.getElementById('mobileNavContent').innerHTML = h;
   document.getElementById('mobileNavFooter').innerHTML = '<div style="padding:12px;font-size:11px;color:rgba(255,255,255,0.7)">&#128100; ' + (appUser.full_name || appUser.email) + ' (' + appUser.role + ')</div>' +
-    '<button onclick="installPWA()" style="width:calc(100% - 24px);margin:0 12px 8px;padding:10px;background:#4caf50;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">Install PMS App</button>' +
+    '<button onclick="installApp()" style="width:calc(100% - 24px);margin:0 12px 8px;padding:10px;background:#4caf50;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">Install PMS App</button>' +
     '<button onclick="appLogout()" style="width:calc(100% - 24px);margin:0 12px 12px;padding:10px;background:#f44336;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">Logout</button>';
 }
 function mobileNavGo(page) {
