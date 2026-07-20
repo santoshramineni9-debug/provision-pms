@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: prcm-pms
+    name: provision-pms
     runtime: node
     plan: free
     buildCommand: npm install
