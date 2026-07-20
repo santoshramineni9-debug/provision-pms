@@ -64,34 +64,66 @@ router.post('/submit', (req, res) => {
   res.json({ auth_id: authId, status: 'intake', message: 'Authorization request submitted to payer' });
 });
 
-// Provider verifies authorization from payer by date/DOS
+// Provider submits RETRO authorization (DOS outside validity period)
+router.post('/retro-submit', (req, res) => {
+  const authId = 'RETRO' + String(Date.now()).slice(-6);
+  const { original_auth_id, patient_id, dos, auth_type, procedure_code, cpt_codes, icd_codes, units, reason } = req.body;
+
+  const origAuth = original_auth_id ? db.prepare('SELECT * FROM authorizations WHERE auth_id = ?').get(original_auth_id) : null;
+  const insurance_id = origAuth ? origAuth.insurance_id : null;
+
+  const notes = '[RETRO AUTHORIZATION] Original Auth: ' + (original_auth_id || 'N/A') + ' | Actual DOS: ' + dos + ' | Reason: ' + (reason || '');
+
+  db.prepare(`
+    INSERT INTO authorizations (auth_id, patient_id, insurance_id, auth_type, status, procedure_code, icd_codes, cpt_codes, units, submission_date, notes)
+    VALUES (?, ?, ?, ?, 'retro_pending', ?, ?, ?, ?, date('now'), ?)
+  `).run(authId, patient_id, insurance_id, auth_type, procedure_code, icd_codes, cpt_codes, units || 1, notes);
+
+  db.prepare(`INSERT INTO auth_history (auth_id, action, performed_by, notes) VALUES (?, 'retro_submitted', 'provider', ?)`).run(authId, 'Retro authorization submitted. Original Auth: ' + (original_auth_id || 'N/A') + ' | DOS: ' + dos + ' | Reason: ' + (reason || ''));
+
+  res.json({ auth_id: authId, status: 'retro_pending', message: 'Retro authorization submitted to payer for review' });
+});
+
+// Provider verifies authorization from payer — accepts optional DOS parameter for validity check
 router.get('/verify/:authId', (req, res) => {
   const auth = db.prepare('SELECT * FROM authorizations WHERE auth_id = ?').get(req.params.authId);
   if (!auth) return res.status(404).json({ error: 'Not found' });
-
-  const today = new Date().toISOString().split('T')[0];
-  const isExpired = auth.expiration_date && auth.expiration_date < today;
-  const isActive = auth.status === 'approved' && !isExpired;
-  const remainingAmount = auth.authorized_amount - auth.used_amount;
+  const dos = req.query.dos || null;
+  var isExpired = false, isActive = false, dosStatus = null;
+  if (auth.authorization_number && auth.effective_date && auth.expiration_date) {
+    const today = new Date().toISOString().split('T')[0];
+    isExpired = today > auth.expiration_date;
+    isActive = auth.status === 'approved' && !isExpired;
+    if (dos) {
+      if (dos < auth.effective_date) dosStatus = 'before_validity';
+      else if (dos > auth.expiration_date) dosStatus = 'expired';
+      else dosStatus = 'within_validity';
+    }
+  }
+  const remainingAmount = (auth.authorized_amount || 0) - (auth.used_amount || 0);
   const remainingDays = auth.expiration_date ? Math.ceil((new Date(auth.expiration_date) - new Date()) / (1000 * 60 * 60 * 24)) : null;
-
   res.json({
     auth_id: auth.auth_id,
+    patient_id: auth.patient_id,
+    insurance_id: auth.insurance_id,
     status: auth.status,
     is_active: isActive,
     is_expired: isExpired,
+    dos_check: dosStatus,
     authorization_number: auth.authorization_number,
     submission_date: auth.submission_date,
     effective_date: auth.effective_date,
     expiration_date: auth.expiration_date,
-    authorized_amount: auth.authorized_amount,
-    used_amount: auth.used_amount,
+    authorized_amount: auth.authorized_amount || 0,
+    used_amount: auth.used_amount || 0,
     remaining_amount: remainingAmount,
     remaining_days: remainingDays,
     procedure_code: auth.procedure_code,
     procedure_description: auth.procedure_description,
     cpt_codes: auth.cpt_codes,
-    icd_codes: auth.icd_codes
+    icd_codes: auth.icd_codes,
+    auth_type: auth.auth_type,
+    notes: auth.notes
   });
 });
 
@@ -132,14 +164,20 @@ router.put('/:authId/request-info', (req, res) => {
   res.json({ message: 'Additional information requested' });
 });
 
-// Payer: Approve Authorization
+// Payer: Approve Authorization (works from review, retro_pending, hold)
 router.put('/:authId/approve', (req, res) => {
+  const auth = db.prepare("SELECT * FROM authorizations WHERE auth_id = ?").get(req.params.authId);
+  if (!auth) return res.status(404).json({ error: 'Not found' });
   const { authorization_number, effective_date, expiration_date, authorized_amount, approved_by } = req.body;
+  if (!authorization_number) return res.status(400).json({ error: 'Authorization number is required' });
+  if (!effective_date || !expiration_date) return res.status(400).json({ error: 'Both valid from and valid to dates are required' });
   db.prepare(`
     UPDATE authorizations SET status='approved', authorization_number=?, effective_date=?, expiration_date=?, authorized_amount=?, remaining_amount=?, approval_date=date('now') WHERE auth_id=?
-  `).run(authorization_number, effective_date, expiration_date, authorized_amount, authorized_amount, req.params.authId);
-  db.prepare("INSERT INTO auth_history (auth_id, action, performed_by, notes) VALUES (?, 'approved', ?, ?)").run(req.params.authId, approved_by || 'payer_approver', 'Approved. Auth#' + authorization_number + ' Amt:$' + authorized_amount);
-  res.json({ message: 'Authorization approved' });
+  `).run(authorization_number, effective_date, expiration_date, authorized_amount || 0, authorized_amount || 0, req.params.authId);
+  var histNote = 'Approved. Auth#' + authorization_number + ' Valid: ' + effective_date + ' to ' + expiration_date + ' Amt:$' + (authorized_amount || 0);
+  if (auth.status === 'retro_pending') histNote = 'RETRO APPROVED. ' + histNote;
+  db.prepare("INSERT INTO auth_history (auth_id, action, performed_by, notes) VALUES (?, 'approved', ?, ?)").run(req.params.authId, approved_by || 'payer_approver', histNote);
+  res.json({ message: 'Authorization approved', auth_id: req.params.authId, authorization_number: authorization_number });
 });
 
 // Payer: Deny Authorization
@@ -166,6 +204,37 @@ router.post('/:authId/peer-review', (req, res) => {
   db.prepare("UPDATE authorizations SET status='peer_review' WHERE auth_id=?").run(req.params.authId);
   db.prepare("INSERT INTO auth_history (auth_id, action, performed_by, notes) VALUES (?, 'peer_review_requested', ?, ?)").run(req.params.authId, requested_by || 'provider', 'Peer-to-peer review requested with ' + (payer_director || 'payer medical director'));
   res.json({ message: 'Peer-to-peer review scheduled' });
+});
+
+// Provider: Resubmit authorization after uploading additional docs (pend → review)
+router.put('/:authId/resubmit', (req, res) => {
+  const auth = db.prepare("SELECT * FROM authorizations WHERE auth_id = ?").get(req.params.authId);
+  if (!auth) return res.status(404).json({ error: 'Not found' });
+  if (auth.status !== 'pend') return res.status(400).json({ error: 'Can only resubmit from PEND status' });
+  const { notes } = req.body;
+  db.prepare("UPDATE authorizations SET status = 'review' WHERE auth_id = ?").run(req.params.authId);
+  db.prepare("INSERT INTO auth_history (auth_id, action, performed_by, notes) VALUES (?, 'resubmitted', 'provider', ?)").run(req.params.authId, 'Provider resubmitted after uploading docs. ' + (notes || ''));
+  res.json({ message: 'Authorization resubmitted to payer for review' });
+});
+
+// Payer: Hold authorization
+router.put('/:authId/hold', (req, res) => {
+  const auth = db.prepare("SELECT * FROM authorizations WHERE auth_id = ?").get(req.params.authId);
+  if (!auth) return res.status(404).json({ error: 'Not found' });
+  const { held_by, reason } = req.body;
+  db.prepare("UPDATE authorizations SET status = 'hold' WHERE auth_id = ?").run(req.params.authId);
+  db.prepare("INSERT INTO auth_history (auth_id, action, performed_by, notes) VALUES (?, 'held', ?, ?)").run(req.params.authId, held_by || 'payer', 'Authorization placed on hold. ' + (reason || ''));
+  res.json({ message: 'Authorization placed on hold' });
+});
+
+// Payer: Release from hold (hold → review)
+router.put('/:authId/release', (req, res) => {
+  const auth = db.prepare("SELECT * FROM authorizations WHERE auth_id = ?").get(req.params.authId);
+  if (!auth) return res.status(404).json({ error: 'Not found' });
+  const { released_by, notes } = req.body;
+  db.prepare("UPDATE authorizations SET status = 'review' WHERE auth_id = ?").run(req.params.authId);
+  db.prepare("INSERT INTO auth_history (auth_id, action, performed_by, notes) VALUES (?, 'released_from_hold', ?, ?)").run(req.params.authId, released_by || 'payer', 'Released from hold. ' + (notes || ''));
+  res.json({ message: 'Authorization released from hold' });
 });
 
 // Cancel authorization

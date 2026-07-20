@@ -22,9 +22,18 @@ router.get('/patient/:patientId', (req, res) => {
   res.json(db.prepare(query).all(...params));
 });
 
-// Search by MRN
+// Search by MRN or patient_id (broad search)
 router.get('/search/mrn/:mrn', (req, res) => {
-  const records = db.prepare('SELECT * FROM medical_records WHERE mrn = ? ORDER BY created_at DESC').all(req.params.mrn);
+  const q = req.params.mrn;
+  const records = db.prepare('SELECT * FROM medical_records WHERE patient_id = ? OR mrn = ? ORDER BY created_at DESC').all(q, q);
+  res.json(records);
+});
+
+// Broad search
+router.get('/search', (req, res) => {
+  const q = req.query.q || '';
+  if (!q) return res.json([]);
+  const records = db.prepare('SELECT * FROM medical_records WHERE patient_id = ? OR mrn = ? OR title LIKE ? ORDER BY created_at DESC').all(q, q, '%' + q + '%');
   res.json(records);
 });
 
@@ -35,23 +44,29 @@ router.get('/', (req, res) => {
 });
 
 // Upload document
-router.post('/upload', upload.array('files', 20), (req, res) => {
-  const { patient_id, record_type, title, description, category, uploaded_by } = req.body;
-  const patient = db.prepare('SELECT mrn FROM patients WHERE patient_id = ?').get(patient_id);
+router.post('/upload', (req, res) => {
+  upload.array('files', 20)(req, res, (err) => {
+    if (err) return res.status(400).json({ error: 'Upload error: ' + err.message });
+    try {
+      const { patient_id, record_type, title, description, category, uploaded_by } = req.body;
+      if (!patient_id || !title) return res.status(400).json({ error: 'Patient ID and Title required' });
+      if (!req.files || !req.files.length) return res.status(400).json({ error: 'No files selected' });
+      const patient = db.prepare('SELECT mrn FROM patients WHERE patient_id = ?').get(patient_id);
 
-  const insertRecord = db.prepare(`
-    INSERT INTO medical_records (record_id, patient_id, mrn, record_type, title, description, file_name, file_path, file_type, file_size, category, uploaded_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
+      const insertRecord = db.prepare(`
+        INSERT INTO medical_records (record_id, patient_id, mrn, record_type, title, description, file_name, file_path, file_type, file_size, category, uploaded_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
 
-  const results = [];
-  for (const file of req.files) {
-    const recordId = 'MR' + String(Date.now()).slice(-6) + String(Math.floor(Math.random() * 1000));
-    insertRecord.run(recordId, patient_id, patient?.mrn, record_type || 'document', title || file.originalname, description, file.originalname, file.path, file.mimetype, file.size, category || 'general', uploaded_by);
-    results.push({ record_id: recordId, file_name: file.originalname });
-  }
-
-  res.json({ message: 'Documents uploaded', records: results });
+      const results = [];
+      for (const file of req.files) {
+        const recordId = 'MR' + String(Date.now()).slice(-6) + String(Math.floor(Math.random() * 1000));
+        insertRecord.run(recordId, patient_id, patient?.mrn || '', record_type || 'document', title || file.originalname, description || '', file.originalname, file.path, file.mimetype, file.size, category || 'general', uploaded_by || '');
+        results.push({ record_id: recordId, file_name: file.originalname });
+      }
+      res.json({ message: 'Documents uploaded', records: results });
+    } catch(e) { res.status(500).json({ error: 'Upload failed: ' + e.message }); }
+  });
 });
 
 // Verify patient history

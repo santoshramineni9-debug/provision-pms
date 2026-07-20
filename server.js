@@ -20,7 +20,7 @@ const upload = multer({ storage, limits: { fileSize: 500 * 1024 * 1024 } });
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), { maxAge: 0, etag: false }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
   setHeaders: (res) => { res.set('Content-Disposition', 'inline'); res.set('X-Content-Type-Options', 'nosniff'); }
 }));
@@ -32,6 +32,10 @@ async function start() {
   // Add card_image columns to insurances table if missing
   try { db.prepare("ALTER TABLE insurances ADD COLUMN card_image_front TEXT").run(); } catch(e) {}
   try { db.prepare("ALTER TABLE insurances ADD COLUMN card_image_back TEXT").run(); } catch(e) {}
+
+  // Add secondary/tertiary insurance columns to charges table if missing
+  try { db.prepare("ALTER TABLE charges ADD COLUMN secondary_insurance_id INTEGER").run(); } catch(e) {}
+  try { db.prepare("ALTER TABLE charges ADD COLUMN tertiary_insurance_id INTEGER").run(); } catch(e) {}
 
   db.prepare(`CREATE TABLE IF NOT EXISTS training_videos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -81,6 +85,7 @@ async function start() {
   app.use('/api/appeals', require('./routes/appeals'));
   app.use('/api/corrected-claim', require('./routes/correctedClaims'));
   app.use('/api/documents', require('./routes/documents'));
+  app.use('/api/clearinghouse', require('./routes/clearinghouse'));
 
   // ============ MEDICAL CODING REVIEW API ============
   app.get('/api/coding/reviews', (req, res) => {

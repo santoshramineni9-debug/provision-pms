@@ -41,10 +41,22 @@ router.get('/:patientId/360', (req, res) => {
 
   const insurances = db.prepare('SELECT * FROM insurances WHERE patient_id = ?').all(pid);
   
-  // Auto-expire eligibility based on termination_date
-  const eligibilities = db.prepare('SELECT * FROM eligibility_master WHERE patient_id = ?').all(pid);
+  // Auto-expire eligibility based on termination_date — search by patient_id OR member_id
+  let eligibilities = db.prepare('SELECT * FROM eligibility_master WHERE patient_id = ?').all(pid);
+  // Also find eligibility by member_id from insurances (covers payer-created records)
+  for (const ins of insurances) {
+    if (ins.member_id) {
+      const extra = db.prepare('SELECT * FROM eligibility_master WHERE member_id = ? AND patient_id != ? ORDER BY id DESC').all(ins.member_id, pid);
+      for (const e of extra) {
+        if (!eligibilities.find(x => x.member_id === e.member_id)) eligibilities.push(e);
+      }
+    }
+  }
   const eligibility_summary = [];
+  const seenMemberIds = new Set();
   for (const e of eligibilities) {
+    if (seenMemberIds.has(e.member_id)) continue;
+    seenMemberIds.add(e.member_id);
     let status = e.status;
     if (e.status === 'active' && e.termination_date && e.termination_date < today) {
       db.prepare("UPDATE eligibility_master SET status = 'expired' WHERE id = ?").run(e.id);
@@ -55,12 +67,26 @@ router.get('/:patientId/360', (req, res) => {
     eligibility_summary.push({ ...e, computed_status: status });
   }
 
-  // Also auto-expire insurance records based on their termination_date
+  // Also auto-expire insurance records based on their termination_date + attach eligibility status
   for (const ins of insurances) {
     if (ins.status === 'active' && ins.termination_date && ins.termination_date < today) {
       db.prepare("UPDATE insurances SET status = 'expired' WHERE id = ?").run(ins.id);
       ins.status = 'expired';
     }
+    const elig = db.prepare('SELECT * FROM eligibility_master WHERE insurance_id = ? OR member_id = ? ORDER BY id DESC LIMIT 1').get(ins.id, ins.member_id);
+    if (elig) {
+      if (elig.status === 'active' && elig.termination_date && elig.termination_date < today) {
+        ins.eligibility_status = 'expired';
+        db.prepare("UPDATE eligibility_master SET status = 'expired' WHERE id = ?").run(elig.id);
+      } else if (elig.effective_date && elig.effective_date > today) {
+        ins.eligibility_status = 'pending';
+      } else {
+        ins.eligibility_status = elig.status || 'active';
+      }
+    } else {
+      ins.eligibility_status = null;
+    }
+    ins.effective_status = (ins.eligibility_status === 'expired') ? 'expired' : (ins.eligibility_status === 'pending') ? 'pending' : (ins.status || 'active');
   }
 
   const dependents = db.prepare('SELECT * FROM dependents WHERE guarantor_patient_id = ?').all(pid);
@@ -94,7 +120,32 @@ router.get('/:patientId', (req, res) => {
   const patient = db.prepare('SELECT * FROM patients WHERE patient_id = ?').get(req.params.patientId);
   if (!patient) return res.status(404).json({ error: 'Patient not found' });
 
+  const today = new Date().toISOString().slice(0, 10);
   const insurances = db.prepare('SELECT * FROM insurances WHERE patient_id = ?').all(req.params.patientId);
+
+  // Attach eligibility status to each insurance
+  for (const ins of insurances) {
+    if (ins.status === 'active' && ins.termination_date && ins.termination_date < today) {
+      db.prepare("UPDATE insurances SET status = 'expired' WHERE id = ?").run(ins.id);
+      ins.status = 'expired';
+    }
+    const elig = db.prepare('SELECT * FROM eligibility_master WHERE insurance_id = ? OR member_id = ? ORDER BY id DESC LIMIT 1').get(ins.id, ins.member_id);
+    if (elig) {
+      if (elig.status === 'active' && elig.termination_date && elig.termination_date < today) {
+        ins.eligibility_status = 'expired';
+        ins.eligibility_term_date = elig.termination_date;
+        db.prepare("UPDATE eligibility_master SET status = 'expired' WHERE id = ?").run(elig.id);
+      } else if (elig.effective_date && elig.effective_date > today) {
+        ins.eligibility_status = 'pending';
+      } else {
+        ins.eligibility_status = elig.status || 'active';
+      }
+    } else {
+      ins.eligibility_status = null;
+    }
+    ins.effective_status = (ins.eligibility_status === 'expired') ? 'expired' : (ins.eligibility_status === 'pending') ? 'pending' : (ins.status || 'active');
+  }
+
   const dependents = db.prepare('SELECT * FROM dependents WHERE guarantor_patient_id = ?').all(req.params.patientId);
   res.json({ ...patient, insurances, dependents });
 });
@@ -154,6 +205,61 @@ router.put('/:patientId/insurance/:insuranceId', (req, res) => {
 router.delete('/:patientId/insurance/:insuranceId', (req, res) => {
   db.prepare('DELETE FROM insurances WHERE id=? AND patient_id=?').run(req.params.insuranceId, req.params.patientId);
   res.json({ message: 'Insurance deleted' });
+});
+
+// Lookup insurance card by Member ID (payer-created cards)
+router.get('/insurance/lookup/:memberId', (req, res) => {
+  const ins = db.prepare('SELECT * FROM insurances WHERE member_id = ? ORDER BY id DESC').all(req.params.memberId);
+  if (!ins.length) return res.json({ found: false, message: 'No insurance card found for Member ID: ' + req.params.memberId });
+  const today = new Date().toISOString().slice(0, 10);
+  const enriched = ins.map(i => {
+    const elig = db.prepare('SELECT * FROM eligibility_master WHERE insurance_id = ? OR member_id = ? ORDER BY id DESC').all(i.id, i.member_id);
+    let eligibility_status = null;
+    if (elig.length) {
+      const e = elig[0];
+      if (e.status === 'active' && e.termination_date && e.termination_date < today) eligibility_status = 'expired';
+      else if (e.effective_date && e.effective_date > today) eligibility_status = 'pending';
+      else eligibility_status = e.status || 'active';
+    }
+    i.eligibility_status = eligibility_status;
+    i.effective_status = (eligibility_status === 'expired') ? 'expired' : (eligibility_status === 'pending') ? 'pending' : (i.status || 'active');
+    return i;
+  });
+  res.json({ found: true, insurances: enriched });
+});
+
+// Link payer-created insurance card to patient
+router.post('/:patientId/insurance/link', (req, res) => {
+  const { insurance_id, insurance_type } = req.body;
+  const ins = db.prepare('SELECT * FROM insurances WHERE id = ?').get(insurance_id);
+  if (!ins) return res.status(404).json({ error: 'Insurance card not found' });
+  if (ins.patient_id && ins.patient_id !== req.params.patientId) return res.status(400).json({ error: 'This insurance is already linked to patient: ' + ins.patient_id });
+  const existingType = db.prepare('SELECT id FROM insurances WHERE patient_id = ? AND insurance_type = ?').get(req.params.patientId, insurance_type);
+  if (existingType) return res.status(400).json({ error: 'Patient already has ' + insurance_type + ' insurance' });
+  db.prepare('UPDATE insurances SET patient_id = ?, insurance_type = ? WHERE id = ?').run(req.params.patientId, insurance_type || 'primary', insurance_id);
+  db.save();
+  res.json({ message: 'Insurance linked to patient', insurance_id: insurance_id });
+});
+
+// Reorder insurance priority (swap types)
+router.post('/:patientId/insurance/reorder', (req, res) => {
+  const { insurance_id, direction } = req.body;
+  const ins = db.prepare('SELECT * FROM insurances WHERE id = ? AND patient_id = ?').get(insurance_id, req.params.patientId);
+  if (!ins) return res.status(404).json({ error: 'Insurance not found' });
+  const typeOrder = ['primary', 'secondary', 'tertiary'];
+  const currentIdx = typeOrder.indexOf(ins.insurance_type);
+  const newIdx = direction === 'up' ? currentIdx - 1 : currentIdx + 1;
+  if (newIdx < 0 || newIdx >= typeOrder.length) return res.status(400).json({ error: 'Cannot move further in that direction' });
+  const newType = typeOrder[newIdx];
+  const swapIns = db.prepare('SELECT * FROM insurances WHERE patient_id = ? AND insurance_type = ?').get(req.params.patientId, newType);
+  if (swapIns) {
+    db.prepare('UPDATE insurances SET insurance_type = ? WHERE id = ?').run(newType, ins.id);
+    db.prepare('UPDATE insurances SET insurance_type = ? WHERE id = ?').run(ins.insurance_type, swapIns.id);
+  } else {
+    db.prepare('UPDATE insurances SET insurance_type = ? WHERE id = ?').run(newType, ins.id);
+  }
+  db.save();
+  res.json({ message: 'Insurance reordered', from: ins.insurance_type, to: newType });
 });
 
 // Upload insurance card image

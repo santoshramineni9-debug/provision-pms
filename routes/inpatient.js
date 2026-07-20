@@ -5,6 +5,7 @@ const db = require('../db');
 // Get all inpatient records
 router.get('/', (req, res) => {
   const { patient_id } = req.query;
+  const today = new Date().toISOString().slice(0, 10);
   let query = `
     SELECT ip.*, p.first_name || ' ' || p.last_name as patient_name, p.mrn
     FROM inpatient_billing ip
@@ -14,7 +15,28 @@ router.get('/', (req, res) => {
   const params = [];
   if (patient_id) { query += ' AND ip.patient_id = ?'; params.push(patient_id); }
   query += ' ORDER BY ip.created_at DESC';
-  res.json(db.prepare(query).all(...params));
+  const rows = db.prepare(query).all(...params);
+  for (const ip of rows) {
+    if (ip.insurance_id) {
+      const ins = db.prepare('SELECT member_id FROM insurances WHERE id = ?').get(ip.insurance_id);
+      let elig = db.prepare('SELECT * FROM eligibility_master WHERE insurance_id = ? OR member_id = ? ORDER BY id DESC LIMIT 1').get(ip.insurance_id, ins ? ins.member_id : '');
+      if (elig) {
+        if (elig.status === 'active' && elig.termination_date && elig.termination_date < today) {
+          ip.eligibility_status = 'expired';
+          db.prepare("UPDATE eligibility_master SET status = 'expired' WHERE id = ?").run(elig.id);
+        } else if (elig.effective_date && elig.effective_date > today) {
+          ip.eligibility_status = 'pending';
+        } else {
+          ip.eligibility_status = elig.status || 'active';
+        }
+      } else {
+        ip.eligibility_status = 'unknown';
+      }
+    } else {
+      ip.eligibility_status = 'no_insurance';
+    }
+  }
+  res.json(rows);
 });
 
 // Get inpatient record with UB-04 data
@@ -34,7 +56,8 @@ router.get('/:ipId', (req, res) => {
 
   let eligibility_status = 'unknown';
   if (ip.insurance_id) {
-    const elig = db.prepare('SELECT * FROM eligibility_master WHERE patient_id = ? AND insurance_id = ? ORDER BY id DESC LIMIT 1').get(ip.patient_id, ip.insurance_id);
+    const ins = db.prepare('SELECT member_id FROM insurances WHERE id = ?').get(ip.insurance_id);
+    let elig = db.prepare('SELECT * FROM eligibility_master WHERE insurance_id = ? OR member_id = ? ORDER BY id DESC LIMIT 1').get(ip.insurance_id, ins ? ins.member_id : '');
     if (elig) {
       if (elig.termination_date && elig.termination_date < today) {
         eligibility_status = 'expired';

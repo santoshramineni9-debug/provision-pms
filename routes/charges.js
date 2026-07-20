@@ -49,16 +49,33 @@ router.get('/:chargeId', (req, res) => {
   const lineItems = db.prepare('SELECT * FROM charge_line_items WHERE charge_id = ?').all(req.params.chargeId);
   const attachments = db.prepare('SELECT * FROM charge_attachments WHERE charge_id = ?').all(req.params.chargeId);
   const insurances = db.prepare('SELECT * FROM insurances WHERE patient_id = ?').all(charge.patient_id);
+  const secondaryIns = charge.secondary_insurance_id ? db.prepare('SELECT * FROM insurances WHERE id = ?').get(charge.secondary_insurance_id) : null;
+  const tertiaryIns = charge.tertiary_insurance_id ? db.prepare('SELECT * FROM insurances WHERE id = ?').get(charge.tertiary_insurance_id) : null;
+  const today = new Date().toISOString().slice(0, 10);
+  for (const ins of insurances) {
+    const elig = db.prepare('SELECT * FROM eligibility_master WHERE insurance_id = ? OR member_id = ? ORDER BY id DESC LIMIT 1').get(ins.id, ins.member_id);
+    if (elig) {
+      if (elig.status === 'active' && elig.termination_date && elig.termination_date < today) {
+        ins.eligibility_status = 'expired';
+      } else if (elig.effective_date && elig.effective_date > today) {
+        ins.eligibility_status = 'pending';
+      } else {
+        ins.eligibility_status = elig.status || 'active';
+      }
+    } else { ins.eligibility_status = null; }
+    ins.effective_status = (ins.eligibility_status === 'expired') ? 'expired' : (ins.eligibility_status === 'pending') ? 'pending' : (ins.status || 'active');
+  }
 
-  res.json({ ...charge, line_items: lineItems, attachments, insurances });
+  res.json({ ...charge, line_items: lineItems, attachments, insurances, secondary_insurance: secondaryIns, tertiary_insurance: tertiaryIns });
 });
 
 // Check eligibility before charge
 router.get('/check-eligibility/:patientId/:insuranceId', (req, res) => {
   const { patientId, insuranceId } = req.params;
   const today = new Date().toISOString().slice(0, 10);
-  const elig = db.prepare('SELECT * FROM eligibility_master WHERE patient_id = ? AND insurance_id = ? ORDER BY id DESC LIMIT 1').get(patientId, insuranceId);
   const ins = db.prepare('SELECT * FROM insurances WHERE id = ?').get(insuranceId);
+  let elig = db.prepare('SELECT * FROM eligibility_master WHERE insurance_id = ? OR member_id = ? ORDER BY id DESC LIMIT 1').get(insuranceId, ins ? ins.member_id : '');
+  if (!elig) elig = db.prepare('SELECT * FROM eligibility_master WHERE patient_id = ? AND insurance_id = ? ORDER BY id DESC LIMIT 1').get(patientId, insuranceId);
   const benefits = db.prepare('SELECT * FROM eligibility_benefits WHERE eligibility_id = ?').all(elig?.id);
 
   let status = 'inactive';
@@ -87,7 +104,7 @@ router.get('/check-eligibility/:patientId/:insuranceId', (req, res) => {
 // Create charge
 router.post('/', (req, res) => {
   const chargeId = 'CHG' + String(Date.now()).slice(-6);
-  const { patient_id, provider_id, charge_date, insurance_id, insurance_type, line_items,
+  const { patient_id, provider_id, charge_date, insurance_id, secondary_insurance_id, tertiary_insurance_id, insurance_type, line_items,
     msp_code, msp_qualifying_person_name, msp_qualifying_person_dob, msp_coverage_start,
     date_of_injury, place_of_accident, accident_type,
     employer_name, employer_address, employer_phone,
@@ -101,15 +118,15 @@ router.post('/', (req, res) => {
   }
 
   db.prepare(`
-    INSERT INTO charges (charge_id, patient_id, provider_id, charge_date, insurance_id, insurance_type, total_charges,
+    INSERT INTO charges (charge_id, patient_id, provider_id, charge_date, insurance_id, secondary_insurance_id, tertiary_insurance_id, insurance_type, total_charges,
       msp_code, msp_qualifying_person_name, msp_qualifying_person_dob, msp_coverage_start,
       date_of_injury, place_of_accident, accident_type,
       employer_name, employer_address, employer_phone,
       workers_comp_claim, workers_comp_carrier, auto_claim_number, auto_insurance_carrier,
       eligibility_status, eligibility_checked_at,
       auth_number, auth_from_date, auth_to_date)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(chargeId, patient_id, provider_id, charge_date, insurance_id || null, insurance_type || null, totalCharges,
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(chargeId, patient_id, provider_id, charge_date, insurance_id || null, secondary_insurance_id || null, tertiary_insurance_id || null, insurance_type || null, totalCharges,
     msp_code || null, msp_qualifying_person_name || null, msp_qualifying_person_dob || null, msp_coverage_start || null,
     date_of_injury || null, place_of_accident || null, accident_type || null,
     employer_name || null, employer_address || null, employer_phone || null,
