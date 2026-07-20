@@ -2,8 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Provision AR Calling - Practice Management System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1a237e">
+  <meta name="description" content="Provision AR Calling - Practice Management System">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/images/healthcare-logo.svg">
+  <link rel="icon" type="image/svg+xml" href="/images/healthcare-logo.svg">
+  <title>Provision PMS - Practice Management System</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -25,15 +32,29 @@
 </div>
 
 <div class="header" id="appHeader" style="display:none">
-  <div style="display:flex;align-items:center;gap:12px">
-    <img src="/images/logo.svg" alt="Provision AR Calling" style="height:52px;width:auto;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3))">
+  <div style="display:flex;align-items:center;gap:10px">
+    <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileNav()">&#9776;</button>
+    <img src="/images/healthcare-logo.svg" alt="Provision AR Calling" style="height:36px;width:auto;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3))">
+    <span class="header-title">Provision PMS</span>
   </div>
-  <div id="headerUserArea" style="display:flex;align-items:center;gap:10px">
-    <div class="search-global">
-      <input type="text" id="globalSearch" placeholder="Search by Patient ID, MRN, SSN, Name..." onkeyup="globalSearchPatients(event)">
-      <button onclick="doGlobalSearch()">Search</button>
-    </div>
+  <div id="headerUserArea" style="display:flex;align-items:center;gap:8px"></div>
+</div>
+
+<!-- UPDATE BANNER -->
+<div id="updateBanner" style="display:none;position:fixed;top:0;left:0;right:0;background:#ff9800;color:#333;text-align:center;padding:8px;z-index:10001;font-size:12px;font-weight:600;cursor:pointer" onclick="window.location.reload()">
+  New version available - Tap to refresh
+</div>
+
+<!-- MOBILE NAV DRAWER -->
+<div id="mobileNavOverlay" class="mobile-nav-overlay" onclick="toggleMobileNav()"></div>
+<div id="mobileNavDrawer" class="mobile-nav-drawer">
+  <div class="mobile-nav-header">
+    <img src="/images/healthcare-logo.svg" alt="Logo" style="height:40px">
+    <span>Provision PMS</span>
+    <button class="mobile-nav-close" onclick="toggleMobileNav()">&times;</button>
   </div>
+  <div id="mobileNavContent" class="mobile-nav-content"></div>
+  <div class="mobile-nav-footer" id="mobileNavFooter"></div>
 </div>
 <div class="topnav" id="mainNav" style="display:none">
 </div>
@@ -10992,6 +11013,86 @@ function codingClearSearch() {
   document.getElementById('codingSearchDateTo').value = '';
   var rows = document.getElementById('crReviewBody').querySelectorAll('tr');
   rows.forEach(function(row) { row.style.display = ''; });
+}
+
+// ============ PWA: Service Worker + Install + Update ============
+(function() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        if (nw) nw.addEventListener('statechange', () => {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+            document.getElementById('updateBanner').style.display = 'block';
+          }
+        });
+      });
+    });
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; });
+    window.installPWA = function() {
+      if (!deferredPrompt) { showToast('Open in mobile browser to install', 'info'); return; }
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(r => { deferredPrompt = null; });
+    };
+  }
+})();
+
+// ============ MOBILE HAMBURGER NAV ============
+var mobileNavOpen = false;
+function toggleMobileNav() {
+  mobileNavOpen = !mobileNavOpen;
+  document.getElementById('mobileNavOverlay').classList.toggle('active', mobileNavOpen);
+  document.getElementById('mobileNavDrawer').classList.toggle('active', mobileNavOpen);
+  if (mobileNavOpen) buildMobileNav();
+}
+function buildMobileNav() {
+  var role = appUser ? appUser.role : '';
+  var isAdmin = (role === 'admin');
+  var isTrainer = (role === 'admin' || role === 'trainer');
+  var isUser = (role === 'user');
+  var h = '';
+  if (!isUser) {
+    h += '<div class="mobile-nav-group"><div class="mobile-nav-group-title">Patient</div>';
+    h += '<a onclick="mobileNavGo(\'patient360\')">&#128269; Patient 360</a>';
+    h += '<a onclick="mobileNavGo(\'patients\')">&#128100; Patients</a>';
+    h += '<a onclick="mobileNavGo(\'eligibility\')">&#9989; Eligibility</a>';
+    h += '<a onclick="mobileNavGo(\'appointments\')">&#128197; Appointments</a></div>';
+    h += '<div class="mobile-nav-group"><div class="mobile-nav-group-title">Billing</div>';
+    h += '<a onclick="mobileNavGo(\'charges\')">&#128196; Charge Entry</a>';
+    h += '<a onclick="mobileNavGo(\'payments\')">&#128176; Payment Posting</a>';
+    h += '<a onclick="mobileNavGo(\'clearinghouse\')">&#127464; Clearinghouse</a>';
+    h += '<a onclick="mobileNavGo(\'adjudication\')">&#128269; Adjudication</a></div>';
+    h += '<div class="mobile-nav-group"><div class="mobile-nav-group-title">Revenue Cycle</div>';
+    h += '<a onclick="mobileNavGo(\'ar\')">&#128222; AR Calling</a>';
+    h += '<a onclick="mobileNavGo(\'authorizations\')">&#128220; Authorizations</a>';
+    h += '<a onclick="mobileNavGo(\'rejections\')">&#10060; Rejections</a>';
+    h += '<a onclick="mobileNavGo(\'appeals\')">&#9878; Appeals</a>';
+    h += '<a onclick="mobileNavGo(\'offsetTracking\')">&#128200; Offset / Recon</a></div>';
+    h += '<div class="mobile-nav-group"><div class="mobile-nav-group-title">Records</div>';
+    h += '<a onclick="mobileNavGo(\'medicalRecords\')">&#128193; Medical Records</a>';
+    h += '<a onclick="mobileNavGo(\'inpatient\')">&#127973; Inpatient / UB-04</a></div>';
+    h += '<a onclick="mobileNavGo(\'reports\')" class="mobile-nav-link-single">&#128202; Reports</a>';
+    h += '<div class="mobile-nav-group"><div class="mobile-nav-group-title">Medical Coding</div>';
+    h += '<a onclick="mobileNavGo(\'coding\')">&#129504; Coding Review</a>';
+    h += '<a onclick="mobileNavGo(\'masterdata\')">&#128218; Master Data</a>';
+    h += '<a onclick="mobileNavGo(\'website\')" style="color:#ff9800;font-weight:bold">&#127760; Website Manager</a></div>';
+  }
+  h += '<div class="mobile-nav-group"><div class="mobile-nav-group-title" style="color:#ffeb3b">AR Training</div>';
+  h += '<a onclick="mobileNavGo(\'artraining\')">&#128218; AR Training Center</a>';
+  h += '<a onclick="mobileNavGo(\'arscenarios\')">&#128218; AR Scenarios (25)</a>';
+  h += '<a onclick="mobileNavGo(\'arqa\')">&#128172; AR Calling Q&amp;A</a>';
+  if (isTrainer) h += '<a onclick="mobileNavGo(\'artraining\');setTimeout(showTrainingVideos,200)" style="color:#e91e63">&#127909; Training Videos</a>';
+  if (isAdmin) h += '<a onclick="mobileNavGo(\'artraining\');setTimeout(showUserManagement,200)" style="color:#78909c">&#9881; User Management</a>';
+  h += '</div>';
+  document.getElementById('mobileNavContent').innerHTML = h;
+  document.getElementById('mobileNavFooter').innerHTML = '<div style="padding:12px;font-size:11px;color:rgba(255,255,255,0.7)">&#128100; ' + (appUser.full_name || appUser.email) + ' (' + appUser.role + ')</div>' +
+    '<button onclick="installPWA()" style="width:calc(100% - 24px);margin:0 12px 8px;padding:10px;background:#4caf50;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">Install PMS App</button>' +
+    '<button onclick="appLogout()" style="width:calc(100% - 24px);margin:0 12px 12px;padding:10px;background:#f44336;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">Logout</button>';
+}
+function mobileNavGo(page) {
+  toggleMobileNav();
+  showPage(page);
 }
 </script>
 </body>
