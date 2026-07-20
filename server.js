@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const db = require('./db');
 const PDFDocument = require('pdfkit');
 const { exec } = require('child_process');
 
@@ -26,7 +27,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
 }));
 
 async function start() {
-  const db = require('./db');
   await db.ready;
 
   // Add card_image columns to insurances table if missing
@@ -68,24 +68,44 @@ async function start() {
     db.prepare('INSERT INTO training_users (email, password, full_name, role, permissions, fee_amount, paid_amount, due_date, access_until) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run('trainer@provision.com', 'trainer123', 'Trainer', 'trainer', '["all"]', 0, 0, '', '');
   }
 
-  app.use('/api/patients', require('./routes/patients'));
-  app.use('/api/eligibility', require('./routes/eligibility'));
-  app.use('/api/appointments', require('./routes/appointments'));
-  app.use('/api/providers', require('./routes/providers'));
-  app.use('/api/charges', require('./routes/charges'));
-  app.use('/api/payments', require('./routes/payments'));
-  app.use('/api/ar', require('./routes/ar'));
-  app.use('/api/authorizations', require('./routes/authorizations'));
-  app.use('/api/medical-records', require('./routes/medicalRecords'));
-  app.use('/api/inpatient', require('./routes/inpatient'));
-  app.use('/api/rejections', require('./routes/rejections'));
-  app.use('/api/offset-tracking', require('./routes/offsetTracking'));
-  app.use('/api/adjudication', require('./routes/adjudication'));
-  app.use('/api/cms1500', require('./routes/cms1500'));
-  app.use('/api/appeals', require('./routes/appeals'));
-  app.use('/api/corrected-claim', require('./routes/correctedClaims'));
-  app.use('/api/documents', require('./routes/documents'));
-  app.use('/api/clearinghouse', require('./routes/clearinghouse'));
+  app.listen(PORT, () => {
+    console.log('PMS App running at http://localhost:' + PORT);
+  });
+}
+
+// Register route modules at module level
+function registerRoutes() {
+  const routes = [
+    ['/api/patients', './routes/patients'],
+    ['/api/eligibility', './routes/eligibility'],
+    ['/api/appointments', './routes/appointments'],
+    ['/api/providers', './routes/providers'],
+    ['/api/charges', './routes/charges'],
+    ['/api/payments', './routes/payments'],
+    ['/api/ar', './routes/ar'],
+    ['/api/authorizations', './routes/authorizations'],
+    ['/api/medical-records', './routes/medicalRecords'],
+    ['/api/inpatient', './routes/inpatient'],
+    ['/api/rejections', './routes/rejections'],
+    ['/api/offset-tracking', './routes/offsetTracking'],
+    ['/api/adjudication', './routes/adjudication'],
+    ['/api/cms1500', './routes/cms1500'],
+    ['/api/appeals', './routes/appeals'],
+    ['/api/corrected-claim', './routes/correctedClaims'],
+    ['/api/documents', './routes/documents'],
+    ['/api/clearinghouse', './routes/clearinghouse'],
+  ];
+  for (const [mount, mod] of routes) {
+    try {
+      console.log('Loading route:', mount);
+      app.use(mount, require(mod));
+    } catch(e) {
+      console.error('Failed to load route ' + mount + ':', e.message);
+    }
+  }
+  console.log('All routes loaded');
+}
+registerRoutes();
 
   // ============ MEDICAL CODING REVIEW API ============
   app.get('/api/coding/reviews', (req, res) => {
@@ -676,11 +696,6 @@ async function start() {
       res.status(404).json({ error: 'PDF not found. Please contact admin.' });
     }
   });
-
-  app.listen(PORT, () => {
-    console.log('PMS App running at http://localhost:' + PORT);
-  });
-}
 
 // Student inquiries storage
 const INQUIRIES_FILE = path.join(__dirname, 'student-inquiries.json');
