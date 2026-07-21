@@ -245,6 +245,23 @@
       });
       return { data: patients };
     }
+    if (path === '/api/patients/recent' && method === 'GET') {
+      var allPatients = getStore('patients');
+      var allCharges = getStore('charges');
+      var allIns = getStore('insurances');
+      var pidsWithCharges = [];
+      allCharges.forEach(function(c) { if (pidsWithCharges.indexOf(c.patient_id) === -1) pidsWithCharges.push(c.patient_id); });
+      var recent = allPatients.filter(function(p) { return pidsWithCharges.indexOf(p.id) !== -1 || pidsWithCharges.indexOf(p.patient_id) !== -1; });
+      recent = recent.map(function(p) {
+        var pCharges = allCharges.filter(function(c) { return c.patient_id === p.id; });
+        var linkedIns = allIns.filter(function(i) { return i.patient_id === p.id; });
+        var totalBilled = 0, totalPaid = 0;
+        pCharges.forEach(function(c) { totalBilled += (c.billed_amount || c.total_charges || 0); totalPaid += (c.paid_amount || c.total_paid || 0); });
+        return Object.assign({}, p, { charge_count: pCharges.length, total_billed: totalBilled, total_paid: totalPaid, insurances: linkedIns });
+      });
+      return { data: recent };
+    }
+    if (path === '/api/patients/search' || path.indexOf('/api/patients/search?') === 0) {
     if (path === '/api/patients' && method === 'POST') {
       var patients = getStore('patients');
       body.id = nextId('patients');
@@ -259,7 +276,7 @@
     if ((m = path.match(/^\/api\/patients\/search$/))) {
       var q2 = (q.q || '').toLowerCase();
       var patients = getStore('patients').filter(function(p) {
-        return !q2 || (p.patient_id||'').toLowerCase().indexOf(q2) >= 0 || (p.mrn||'').toLowerCase().indexOf(q2) >= 0 || (p.first_name||'').toLowerCase().indexOf(q2) >= 0 || (p.last_name||'').toLowerCase().indexOf(q2) >= 0;
+        return !q2 || (p.patient_id||'').toLowerCase().indexOf(q2) >= 0 || (p.mrn||'').toLowerCase().indexOf(q2) >= 0 || (p.first_name||'').toLowerCase().indexOf(q2) >= 0 || (p.last_name||'').toLowerCase().indexOf(q2) >= 0 || (p.phone||'').toLowerCase().indexOf(q2) >= 0 || (p.dob||'').toLowerCase().indexOf(q2) >= 0 || (p.ssn||'').toLowerCase().indexOf(q2) >= 0 || (p.email||'').toLowerCase().indexOf(q2) >= 0 || (p.address||'').toLowerCase().indexOf(q2) >= 0;
       });
       return { data: patients };
     }

@@ -407,10 +407,18 @@
       <div class="card">
         <div class="card-title">Search Patient</div>
         <div class="form-grid">
-          <div class="form-group"><label>Patient ID or MRN *</label><input id="chgSearchQ" placeholder="e.g. PAT001 or MRN00001"></div>
-          <div class="form-group" style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="chgSearchPatient()">Search</button></div>
+          <div class="form-group"><label>Patient ID, MRN, Name, Phone or DOB *</label><input id="chgSearchQ" placeholder="e.g. PAT001, MRN00001, John, 555-0101, 1985-03-15" onkeyup="if(event.key==='Enter')chgSearchPatient()"></div>
+          <div class="form-group" style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="chgSearchPatient()">Search</button> <button class="btn btn-success" onclick="showPatientModal();window._chgReturnToCharge=true">+ New Patient</button></div>
         </div>
         <div id="chgPatientInfo" style="margin-top:10px"></div>
+      </div>
+      <div class="card" id="chgRecentCard">
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Recent Patients (with Charges)</span>
+          <button class="btn btn-sm btn-info" onclick="chgLoadRecent()">Refresh</button>
+        </div>
+        <div style="font-size:11px;color:#888;margin-bottom:8px">Click any patient row to load directly - no search needed</div>
+        <div id="chgRecentGrid" style="max-height:250px;overflow-y:auto"></div>
       </div>
       <div class="card">
         <div class="card-title">Charge Entry</div>
@@ -3313,7 +3321,7 @@ function showPage(page, el) {
     else if (page === 'eligibility') { mtLoadTemplateNames(); payerLoadAll(); }
     else if (page === 'artraining') { artLoadModules(); }
     else if (page === 'appointments') { loadAppointments(); loadProvidersForSelect(); }
-    else if (page === 'charges') { loadCharges(); loadProvidersForSelect(); }
+    else if (page === 'charges') { loadCharges(); loadProvidersForSelect(); chgLoadRecent(); }
     else if (page === 'payments') loadPaymentHistory();
     else if (page === 'ar') loadARCallHistory();
     else if (page === 'authorizations') { loadProviderAuths(); payerLoadQueue(); loadProvidersForSelect(); checkAuthNotifications(); }
@@ -4182,6 +4190,12 @@ async function savePatient() {
     closeModal('modal-patient');
     showToast('Patient created: ' + (result.patient_id || ''));
     loadPatients();
+    if (window._chgReturnToCharge && result.patient_id) {
+      window._chgReturnToCharge = false;
+      document.getElementById('chgSearchQ').value = result.patient_id;
+      chgLoadPatientById(result.patient_id);
+      chgLoadRecent();
+    }
   } catch(e) {
     showToast('Error saving patient: ' + e.message, 'error');
   }
@@ -6830,13 +6844,28 @@ let chargeLines = [];
 async function chgSearchPatient() {
   const q = document.getElementById('chgSearchQ').value.trim();
   if (!q) return;
-  let pid = q;
-  if (q.toUpperCase().startsWith('MRN')) {
-    const sr = await fetch(API + '/api/patients/search?q=' + encodeURIComponent(q));
-    const pts = await sr.json();
-    if (!pts.length) { document.getElementById('chgPatientInfo').innerHTML = '<div style="color:#c62828;font-weight:bold">Patient not found</div>'; return; }
-    pid = pts[0].patient_id;
+  const sr = await fetch(API + '/api/patients/search?q=' + encodeURIComponent(q));
+  const pts = await sr.json();
+  if (pts.length === 1) {
+    await chgLoadPatientById(pts[0].patient_id);
+  } else if (pts.length > 1) {
+    let html = '<div style="background:#e3f2fd;border:1px solid #90caf9;border-radius:6px;padding:8px"><b>Multiple patients found (' + pts.length + '):</b> Click to select:</div>';
+    html += '<table><thead><tr><th>ID</th><th>MRN</th><th>Name</th><th>DOB</th><th>Phone</th><th></th></tr></thead><tbody>';
+    pts.forEach(p => {
+      html += '<tr style="cursor:pointer" onclick="chgLoadPatientById(\'' + p.patient_id + '\')">';
+      html += '<td>' + p.patient_id + '</td><td>' + (p.mrn||'-') + '</td><td>' + p.first_name + ' ' + p.last_name + '</td>';
+      html += '<td>' + (p.dob||'-') + '</td><td>' + (p.phone||'-') + '</td>';
+      html += '<td><button class="btn btn-sm btn-success">Select</button></td></tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('chgPatientInfo').innerHTML = html;
+  } else {
+    document.getElementById('chgPatientInfo').innerHTML = '<div style="color:#c62828;font-weight:bold">No patient found for: ' + q + '</div>';
   }
+}
+
+async function chgLoadPatientById(pid) {
+  document.getElementById('chgSearchQ').value = pid;
   const res = await fetch(API + '/api/patients/' + pid);
   const p = await res.json();
   if (p.error) { document.getElementById('chgPatientInfo').innerHTML = '<div style="color:#c62828;font-weight:bold">Patient not found: ' + pid + '</div>'; return; }
@@ -6921,6 +6950,33 @@ function copyMemberAndVerify(memberId) {
   if (navigator.clipboard) { navigator.clipboard.writeText(memberId); }
   showToast('Member ID copied: ' + memberId);
   verifyEligByMember();
+}
+
+async function chgLoadRecent() {
+  var el = document.getElementById('chgRecentGrid');
+  el.innerHTML = '<div style="color:#888;font-size:11px">Loading...</div>';
+  var res = await fetch(API + '/api/patients/recent');
+  var pts = await res.json();
+  if (!pts.length) {
+    el.innerHTML = '<div style="color:#888;font-size:11px;padding:8px">No patients with charges yet. Create a charge first.</div>';
+    return;
+  }
+  var html = '<table><thead><tr><th>Patient ID</th><th>MRN</th><th>Name</th><th>DOB</th><th>Phone</th><th>Insurance</th><th>Charges</th><th>Total Billed</th><th>Total Paid</th><th></th></tr></thead><tbody>';
+  pts.forEach(p => {
+    var insNames = (p.insurances || []).map(function(i) { return i.payer_name; }).join(', ') || '<span style="color:#c62828">NO INS</span>';
+    html += '<tr style="cursor:pointer" onclick="chgLoadPatientById(\'' + p.patient_id + '\')">';
+    html += '<td><b>' + p.patient_id + '</b></td><td>' + (p.mrn||'-') + '</td><td>' + p.first_name + ' ' + p.last_name + '</td>';
+    html += '<td>' + (p.dob||'-') + '</td><td>' + (p.phone||'-') + '</td><td style="font-size:11px">' + insNames + '</td>';
+    html += '<td><b>' + p.charge_count + '</b></td><td>$' + (p.total_billed||0).toFixed(2) + '</td><td>$' + (p.total_paid||0).toFixed(2) + '</td>';
+    html += '<td><button class="btn btn-sm btn-success" onclick="event.stopPropagation();chgLoadPatientById(\'' + p.patient_id + '\')">Load</button></td></tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function chgQuickLoad(patientId) {
+  document.getElementById('chgSearchQ').value = patientId;
+  chgSearchPatient();
 }
 
 function showInsuranceCard(payer, front, back) {
