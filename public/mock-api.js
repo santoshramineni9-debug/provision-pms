@@ -396,12 +396,16 @@
       body.id = nextId('charges');
       body.charge_id = body.charge_id || 'CHG' + String(body.id).padStart(3,'0');
       body.status = body.status || 'pending';
-      var totalCharges = 0;
-      if (body.line_items && body.line_items.length) {
-        totalCharges = body.line_items.reduce(function(s, li) { return s + (li.charge_amount || 0) * (li.units || 1); }, 0);
+      if (!body.total_charges) {
+        var totalCharges = 0;
+        if (body.line_items && body.line_items.length) {
+          totalCharges = body.line_items.reduce(function(s, li) { return s + (li.charge_amount || 0) * (li.units || 1); }, 0);
+        }
+        body.total_charges = totalCharges;
+        body.billed_amount = totalCharges;
       }
-      body.total_charges = totalCharges;
-      body.billed_amount = totalCharges;
+      body.paid_amount = body.paid_amount || 0;
+      body.total_paid = body.total_paid || 0;
       chg.push(body);
       setStore('charges', chg);
       return { data: body };
