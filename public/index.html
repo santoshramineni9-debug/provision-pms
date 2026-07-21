@@ -395,30 +395,42 @@
 
     <!-- ========== CHARGES PAGE ========== -->
     <div class="page" id="page-charges">
+      <!-- ELIGIBILITY VERIFICATION -->
       <div class="card" style="border:2px solid #1565c0;background:#e3f2fd">
-        <div class="card-title" style="color:#1565c0">Verify Eligibility by Member ID (Insurance Card)</div>
-        <div style="font-size:12px;color:#555;margin-bottom:8px">Patient shows insurance card → Enter Member ID from card → System verifies eligibility with payer</div>
-        <div class="form-grid">
-          <div class="form-group"><label>Member ID (from Insurance Card) *</label><input id="eligMemberId" placeholder="e.g. BCBS-M001" onkeyup="if(event.key==='Enter')verifyEligByMember()"></div>
-          <div class="form-group" style="display:flex;align-items:flex-end"><button class="btn btn-success" onclick="verifyEligByMember()">Verify Eligibility</button></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <div style="background:#1565c0;color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px">1</div>
+          <div class="card-title" style="color:#1565c0;margin:0">Verify Insurance Eligibility</div>
+        </div>
+        <div style="font-size:12px;color:#555;margin-bottom:8px">Enter Member ID from patient's insurance card. System verifies with payer and auto-loads patient.</div>
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <div class="form-group" style="flex:1;margin:0"><label>Member ID (from Insurance Card)</label><input id="eligMemberId" placeholder="e.g. BCBS-M001" oninput="document.getElementById('eligMemberResult').innerHTML=''" onkeyup="if(event.key==='Enter')verifyEligByMember()"></div>
+          <div class="form-group" style="margin:0"><button class="btn btn-success" onclick="verifyEligByMember()">&#10003; Verify Eligibility</button></div>
         </div>
         <div id="eligMemberResult" style="margin-top:10px"></div>
       </div>
-      <div class="card">
-        <div class="card-title">Search Patient</div>
-        <div class="form-grid">
-          <div class="form-group"><label>Patient ID or MRN *</label><input id="chgSearchQ" placeholder="e.g. PAT001 or MRN00001" onkeyup="if(event.key==='Enter')chgSearchPatient()"></div>
-          <div class="form-group" style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="chgSearchPatient()">Search</button> <button class="btn btn-success" onclick="showPatientModal();window._chgReturnToCharge=true">+ New Patient</button></div>
+      <!-- UNIFIED PATIENT SEARCH -->
+      <div class="card" style="border:2px solid #7b1fa2;background:#f3e5f5">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <div style="background:#7b1fa2;color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px">2</div>
+          <div class="card-title" style="color:#7b1fa2;margin:0">Search & Load Patient</div>
         </div>
-    <div id="chgModalPatientInfo" style="margin-top:10px"></div>
+        <div style="font-size:12px;color:#555;margin-bottom:8px">Search by Patient ID, MRN, Name, Phone, DOB, SSN, or Email. Auto-searches as you type.</div>
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <div class="form-group" style="flex:2;margin:0"><label>Search Patient</label><input id="chgSearchQ" placeholder="Type Patient ID, MRN, Name, Phone, DOB, SSN, or Email..." oninput="chgAutoSearch()" onkeyup="if(event.key==='Enter')chgSearchPatient()"></div>
+          <div class="form-group" style="margin:0"><button class="btn btn-primary" onclick="chgSearchPatient()">Search</button></div>
+          <div class="form-group" style="margin:0"><button class="btn btn-success" onclick="showPatientModal();window._chgReturnToCharge=true">+ New Patient</button></div>
+        </div>
+        <div id="chgModalPatientInfo" style="margin-top:10px"></div>
       </div>
+      <!-- RECENT PATIENTS -->
       <div class="card" id="chgRecentCard">
-        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-          <span>Recent Patients (with Charges)</span>
-          <button class="btn btn-sm btn-info" onclick="chgLoadRecent()">Refresh</button>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <div style="background:#e65100;color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px">3</div>
+          <div class="card-title" style="margin:0">Recent Patients (Quick Access)</div>
+          <button class="btn btn-sm btn-info" onclick="chgLoadRecent()" style="margin-left:auto">Refresh</button>
         </div>
-        <div style="font-size:11px;color:#888;margin-bottom:8px">Click any patient row to load directly - no search needed</div>
-        <div id="chgRecentGrid" style="max-height:250px;overflow-y:auto"></div>
+        <div style="font-size:11px;color:#888;margin-bottom:8px">Click any patient to load directly into charge entry</div>
+        <div id="chgRecentGrid" style="max-height:220px;overflow-y:auto"></div>
       </div>
       <div class="card">
         <div class="card-title">Charge Entry</div>
@@ -4052,59 +4064,67 @@ async function uploadInsCard(insId, patientId, side, input) {
 
 async function verifyEligByMember() {
   const memberId = document.getElementById('eligMemberId').value.trim();
-  if (!memberId) { showToast('Enter Member ID from insurance card', 'error'); return; }
-  document.getElementById('eligMemberResult').innerHTML = '<div style="color:#1976d2">Verifying eligibility...</div>';
-  const res = await fetch(API + '/api/eligibility/verify-member/' + encodeURIComponent(memberId));
-  const data = await res.json();
-
-  let html = '';
-  if (data.status === 'active') {
-    html += '<div style="background:#e8f5e9;border:2px solid #4caf50;border-radius:8px;padding:12px">';
-    html += '<div style="font-size:16px;font-weight:bold;color:#2e7d32;margin-bottom:8px">ELIGIBLE - ACTIVE</div>';
-    html += '<div style="display:flex;gap:16px">';
-    html += '<div style="flex:1">';
-    html += '<b>Patient:</b> ' + (data.patient ? data.patient.first_name + ' ' + data.patient.last_name : '<span style="color:#c62828">Not linked</span>') + '<br>';
-    html += '<b>Patient ID:</b> ' + (data.patient ? data.patient.patient_id : '<span style="color:#c62828">-</span>') + '<br>';
-    html += '<b>MRN:</b> ' + (data.patient ? (data.patient.mrn || '-') : '<span style="color:#c62828">-</span>') + '<br>';
-    html += '<b>DOB:</b> ' + (data.patient ? (data.patient.dob || '-') : '<span style="color:#c62828">-</span>') + '<br>';
-    html += '</div>';
-    html += '<div style="flex:1">';
-    html += '<b>Payer:</b> ' + (data.insurance ? data.insurance.payer_name : 'N/A') + '<br>';
-    html += '<b>Member ID:</b> ' + (data.insurance ? data.insurance.member_id : 'N/A') + '<br>';
-    html += '<b>Plan:</b> ' + (data.insurance ? (data.insurance.plan_name || '-') : 'N/A') + '<br>';
-    html += '<b>Copay:</b> $' + (data.insurance ? (data.insurance.copay || 0) : 0) + ' | <b>Deductible:</b> $' + (data.insurance ? (data.insurance.deductible || 0) : 0) + '<br>';
-    html += '</div>';
-    html += '</div>';
-    if (data.benefits && data.benefits.length) {
-      html += '<div style="margin-top:8px"><b>Benefits:</b> ' + data.benefits.filter(b => b.covered).map(b => b.benefit_name).join(', ') + '</div>';
+  if (!memberId) { showToast('Enter Member ID from Insurance Card','error'); return; }
+  document.getElementById('eligMemberResult').innerHTML = '<div style="color:#1976d2;font-weight:bold">Verifying eligibility for: '+memberId+'...</div>';
+  try {
+    const res = await fetch(API + '/api/eligibility/verify-member/' + encodeURIComponent(memberId));
+    const data = await res.json();
+    let html = '';
+    if (data.verified && data.status === 'active' && data.patient) {
+      var p = data.patient, ins = data.insurance || {};
+      html += '<div style="background:#e8f5e9;border:2px solid #4caf50;border-radius:8px;padding:12px">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">';
+      html += '<div style="font-size:16px;font-weight:bold;color:#2e7d32">&#10003; ELIGIBLE - ACTIVE</div>';
+      html += '<button class="btn btn-success" onclick="chgAutoLoadFromElig(\''+p.patient_id+'\')">Load Patient for Charge Entry</button>';
+      html += '</div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">';
+      html += '<div style="background:white;border:1px solid #4caf50;border-radius:6px;padding:10px">';
+      html += '<div style="font-weight:bold;color:#2e7d32;margin-bottom:6px">Patient Info</div>';
+      html += '<div style="font-size:12px;line-height:1.8">';
+      html += '<b>ID:</b> '+p.patient_id+' &nbsp; <b>MRN:</b> '+(p.mrn||'-')+'<br>';
+      html += '<b>Name:</b> '+p.first_name+' '+p.last_name+'<br>';
+      html += '<b>DOB:</b> '+(p.dob||'-')+' &nbsp; <b>Phone:</b> '+(p.phone||'-')+'<br>';
+      html += '<b>Address:</b> '+(p.address||'')+(p.city?', '+p.city:'')+(p.state?', '+p.state:'')+(p.zip?' '+p.zip:'');
+      html += '</div></div>';
+      html += '<div style="background:white;border:1px solid #4caf50;border-radius:6px;padding:10px">';
+      html += '<div style="font-weight:bold;color:#2e7d32;margin-bottom:6px">Insurance Info</div>';
+      html += '<div style="font-size:12px;line-height:1.8">';
+      html += '<b>Payer:</b> '+(ins.payer_name||'-')+'<br>';
+      html += '<b>Member ID:</b> '+(ins.member_id||'-')+'<br>';
+      html += '<b>Group:</b> '+(ins.group_number||'-')+'<br>';
+      html += '<b>Plan:</b> '+(ins.plan_type||'-')+' &nbsp; <b>Type:</b> '+(ins.insurance_type||'primary')+'<br>';
+      html += '<b>Copay:</b> $'+(ins.copay||0)+' &nbsp; <b>Deductible:</b> $'+(ins.deductible||0)+'<br>';
+      html += '<b>Status:</b> <span style="color:#2e7d32;font-weight:bold">'+(ins.effective_status||'ACTIVE').toUpperCase()+'</span>';
+      html += '</div></div></div>';
+      html += '<div style="font-size:11px;color:#888;margin-top:6px">Patient auto-loaded into charge entry below</div>';
+      html += '</div>';
+      document.getElementById('eligMemberResult').innerHTML = html;
+      chgAutoLoadFromElig(p.patient_id);
+    } else if (data.verified && data.status === 'expired') {
+      html += '<div style="background:#fff3e0;border:2px solid #ff9800;border-radius:8px;padding:12px">';
+      html += '<div style="font-size:16px;font-weight:bold;color:#e65100">&#9888; EXPIRED</div>';
+      if (data.patient) html += '<div style="margin-top:4px"><b>Patient:</b> '+data.patient.first_name+' '+data.patient.last_name+' ('+data.patient.patient_id+')</div>';
+      if (data.insurance) html += '<div><b>Payer:</b> '+data.insurance.payer_name+' | <b>Member ID:</b> '+data.insurance.member_id+'</div>';
+      html += '<div style="color:#c62828;margin-top:4px">Eligibility expired. Cannot create charge.</div>';
+      html += '</div>';
+      document.getElementById('eligMemberResult').innerHTML = html;
+    } else {
+      html += '<div style="background:#ffebee;border:2px solid #f44336;border-radius:8px;padding:12px">';
+      html += '<div style="font-size:16px;font-weight:bold;color:#c62828">&#10007; '+(data.error||data.message||'MEMBER NOT FOUND')+'</div>';
+      html += '<div style="font-size:12px;margin-top:4px">No patient found with Member ID: <b>'+memberId+'</b>. Try searching by Patient ID or Name below.</div>';
+      html += '</div>';
+      document.getElementById('eligMemberResult').innerHTML = html;
     }
-    html += '<div style="display:flex;gap:10px;margin-top:8px">';
-    if (data.card_image_front) html += '<img src="' + data.card_image_front + '" style="max-width:280px;max-height:170px;border:1px solid #4caf50;border-radius:4px;cursor:pointer" onclick="window.open(this.src)" title="Insurance Card Front">';
-    if (data.card_image_back) html += '<img src="' + data.card_image_back + '" style="max-width:280px;max-height:170px;border:1px solid #4caf50;border-radius:4px;cursor:pointer" onclick="window.open(this.src)" title="Insurance Card Back">';
-    html += '</div>';
-    html += '</div>';
-    // Auto-populate patient into charge entry
-    if (data.patient && data.insurance) {
-      document.getElementById('chgSearchQ').value = data.patient.patient_id;
-      chgSearchPatient();
-    }
-  } else if (data.status === 'expired') {
-    html += '<div style="background:#fff3e0;border:2px solid #ff9800;border-radius:8px;padding:12px">';
-    html += '<div style="font-size:16px;font-weight:bold;color:#e65100;margin-bottom:8px">EXPIRED - ' + (data.message || '') + '</div>';
-    html += '<div><b>Patient:</b> ' + (data.patient ? data.patient.first_name + ' ' + data.patient.last_name : 'N/A') + '</div>';
-    html += '<div><b>Payer:</b> ' + (data.insurance ? data.insurance.payer_name : 'N/A') + '</div>';
-    html += '<div><b>Member ID:</b> ' + (data.insurance ? data.insurance.member_id : 'N/A') + '</div>';
-    html += '<div style="color:#c62828;font-weight:bold;margin-top:6px">Cannot create charge - eligibility expired. Contact payer for renewal.</div>';
-    if (data.patient) {
-      html += '<div style="margin-top:6px"><button class="btn btn-warning" onclick="document.getElementById(\'chgSearchQ\').value=\'' + data.patient.patient_id + '\';chgSearchPatient()">Load Patient Anyway (View Only)</button></div>';
-    }
-    html += '</div>';
-  } else {
-    html += '<div style="background:#ffebee;border:2px solid #f44336;border-radius:8px;padding:12px">';
-    html += '<div style="font-size:16px;font-weight:bold;color:#c62828">' + (data.message || 'NOT FOUND') + '</div>';
-    html += '</div>';
+  } catch(e) {
+    document.getElementById('eligMemberResult').innerHTML = '<div style="background:#ffebee;border:2px solid #f44336;border-radius:8px;padding:12px"><b>Error verifying: '+e.message+'</b></div>';
   }
-  document.getElementById('eligMemberResult').innerHTML = html;
+}
+
+function chgAutoLoadFromElig(patientId) {
+  document.getElementById('chgSearchQ').value = patientId;
+  chgSearchPatient();
+  document.getElementById('eligMemberId').value = '';
+  setTimeout(function(){ document.getElementById('eligMemberResult').innerHTML = ''; }, 3000);
 }
 
 function showP360Tab(tab, el) {
@@ -6851,108 +6871,112 @@ async function cancelApt(id) {
 
 // ============ CHARGES ============
 let _chargeLinesCompat = [];
+let _chgAutoSearchTimer = null;
+
+function chgAutoSearch() {
+  clearTimeout(_chgAutoSearchTimer);
+  var q = ((document.getElementById('chgSearchQ')||{}).value||'').trim();
+  if (q.length < 2) { document.getElementById('chgModalPatientInfo').innerHTML = ''; return; }
+  _chgAutoSearchTimer = setTimeout(function(){ chgSearchPatient(); }, 400);
+}
 
 async function chgSearchPatient() {
-  const q = document.getElementById('chgSearchQ').value.trim();
+  var q = ((document.getElementById('chgSearchQ')||{}).value||'').trim();
   if (!q) return;
-  const sr = await fetch(API + '/api/patients/search?q=' + encodeURIComponent(q));
-  const pts = await sr.json();
-  if (pts.length === 1) {
-    await chgLoadPatientById(pts[0].patient_id);
-  } else if (pts.length > 1) {
-    let html = '<div style="background:#e3f2fd;border:1px solid #90caf9;border-radius:6px;padding:8px"><b>Multiple patients found (' + pts.length + '):</b> Click to select:</div>';
-    html += '<table><thead><tr><th>ID</th><th>MRN</th><th>Name</th><th>DOB</th><th>Phone</th><th></th></tr></thead><tbody>';
-    pts.forEach(p => {
-      html += '<tr style="cursor:pointer" onclick="chgLoadPatientById(\'' + p.patient_id + '\')">';
-      html += '<td>' + p.patient_id + '</td><td>' + (p.mrn||'-') + '</td><td>' + p.first_name + ' ' + p.last_name + '</td>';
-      html += '<td>' + (p.dob||'-') + '</td><td>' + (p.phone||'-') + '</td>';
-      html += '<td><button class="btn btn-sm btn-success">Select</button></td></tr>';
-    });
-    html += '</tbody></table>';
-  document.getElementById('chgModalPatientInfo').innerHTML = html;
-  } else {
-    document.getElementById('chgPatientInfo').innerHTML = '<div style="color:#c62828;font-weight:bold">No patient found for: ' + q + '</div>';
+  var el = document.getElementById('chgModalPatientInfo');
+  el.innerHTML = '<div style="color:#7b1fa2;font-weight:bold">Searching for "'+q+'"...</div>';
+  try {
+    var sr = await fetch(API + '/api/patients/search?q=' + encodeURIComponent(q));
+    var pts = await sr.json();
+    if (pts.length === 1) {
+      await chgLoadPatientById(pts[0].patient_id);
+    } else if (pts.length > 1) {
+      var html = '<div style="background:#f3e5f5;border:2px solid #7b1fa2;border-radius:6px;padding:8px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">';
+      html += '<div><b>Found '+pts.length+' patients</b> — click a row to load:</div>';
+      html += '<span style="font-size:11px;color:#666">or press ESC to clear</span></div>';
+      html += '<table><thead><tr><th>ID</th><th>MRN</th><th>Name</th><th>DOB</th><th>Phone</th><th>Email</th><th></th></tr></thead><tbody>';
+      pts.forEach(function(p) {
+    html += '<tr style="cursor:pointer" onclick="chgQuickLoad(\'' + p.patient_id + '\')">';
+        html += '<td><b>' + p.patient_id + '</b></td><td>' + (p.mrn||'-') + '</td>';
+        html += '<td>' + p.first_name + ' ' + p.last_name + '</td>';
+        html += '<td>' + (p.dob||'-') + '</td><td>' + (p.phone||'-') + '</td><td style="font-size:11px">' + (p.email||'-') + '</td>';
+        html += '<td><button class="btn btn-sm btn-success">Select</button></td></tr>';
+      });
+      html += '</tbody></table>';
+      el.innerHTML = html;
+    } else {
+      el.innerHTML = '<div style="background:#ffebee;border:2px solid #f44336;border-radius:6px;padding:10px">';
+      el.innerHTML += '<div style="font-weight:bold;color:#c62828">&#10007; No patient found for "'+q+'"</div>';
+      el.innerHTML += '<div style="font-size:12px;margin-top:4px">Try different keywords or <button class="btn btn-sm btn-success" style="margin-left:4px" onclick="showPatientModal();window._chgReturnToCharge=true">+ Create New Patient</button></div>';
+      el.innerHTML += '</div>';
+    }
+  } catch(e) {
+    el.innerHTML = '<div style="color:#c62828">Search error: '+e.message+'</div>';
   }
 }
 
 async function chgLoadPatientById(pid) {
   document.getElementById('chgSearchQ').value = pid;
-  const res = await fetch(API + '/api/patients/' + pid);
-  const p = await res.json();
-  if (p.error) { document.getElementById('chgPatientInfo').innerHTML = '<div style="color:#c62828;font-weight:bold">Patient not found: ' + pid + '</div>'; return; }
+  var el = document.getElementById('chgModalPatientInfo');
+  el.innerHTML = '<div style="color:#7b1fa2;font-weight:bold">Loading patient '+pid+'...</div>';
+  var res = await fetch(API + '/api/patients/' + pid);
+  var p = await res.json();
+  if (p.error) { el.innerHTML = '<div style="color:#c62828;font-weight:bold">Patient not found: '+pid+'</div>'; return; }
   window._chgSelectedPatient = p;
-  let html = '<div style="background:#e8f5e9;border:1px solid #4caf50;border-radius:6px;padding:10px">';
-  html += '<div class="grid-3">';
-  html += '<div class="info-row"><span class="label">Patient ID:</span> ' + p.patient_id + '</div>';
-  html += '<div class="info-row"><span class="label">Name:</span> ' + (p.first_name || '') + ' ' + (p.last_name || '') + '</div>';
-  html += '<div class="info-row"><span class="label">MRN:</span> ' + (p.mrn || '-') + '</div>';
-  html += '<div class="info-row"><span class="label">DOB:</span> ' + (p.dob || '-') + '</div>';
-  html += '<div class="info-row"><span class="label">Phone:</span> ' + (p.phone || '-') + '</div>';
-  html += '<div class="info-row"><span class="label">Address:</span> ' + (p.address || '') + (p.city ? ', ' + p.city : '') + (p.state ? ', ' + p.state : '') + (p.zip ? ' ' + p.zip : '') + '</div>';
-  html += '<div class="info-row"><span class="label">Status:</span> <span class="status-badge status-' + p.status + '">' + (p.status || '-') + '</span></div>';
+  var insCount = (p.insurances||[]).length;
+  var html = '<div style="background:#e8f5e9;border:2px solid #4caf50;border-radius:8px;padding:12px">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+  html += '<div style="font-size:15px;font-weight:bold;color:#2e7d32">&#10003; Patient Loaded: '+p.first_name+' '+p.last_name+' ('+p.patient_id+')</div>';
+  html += '<button class="btn btn-success" onclick="openChargeForPatient(\''+p.patient_id+'\')">&#9654; Create Charge for This Patient</button>';
   html += '</div>';
-  html += '<div style="margin-top:8px"><button class="btn btn-success btn-sm" onclick="openChargeForPatient(\'' + p.patient_id + '\')">&#9654; Create Charge for This Patient</button></div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:12px">';
+  html += '<div><b>Patient ID:</b> '+p.patient_id+'</div>';
+  html += '<div><b>MRN:</b> '+(p.mrn||'-')+'</div>';
+  html += '<div><b>Status:</b> <span class="status-badge status-'+p.status+'">'+(p.status||'-')+'</span></div>';
+  html += '<div><b>DOB:</b> '+(p.dob||'-')+'</div>';
+  html += '<div><b>Phone:</b> '+(p.phone||'-')+'</div>';
+  html += '<div><b>Email:</b> '+(p.email||'-')+'</div>';
+  html += '<div style="grid-column:span 2"><b>Address:</b> '+(p.address||'')+(p.city?', '+p.city:'')+(p.state?', '+p.state:'')+(p.zip?' '+p.zip:'')+'</div>';
+  html += '</div>';
   if (p.insurances && p.insurances.length) {
-    html += '<div style="margin-top:8px"><b>Insurance:</b></div>';
-    p.insurances.forEach(i => {
-      const insStatus = i.effective_status || i.status || 'active';
-      const eligStatus = i.eligibility_status;
-      const effectiveIns = (eligStatus === 'expired') ? 'expired' : (eligStatus === 'pending') ? 'pending' : insStatus;
-      const insStatusColor = effectiveIns === 'expired' ? '#c62828' : effectiveIns === 'pending' ? '#ff9800' : '#2e7d32';
-      const insStatusBg = effectiveIns === 'expired' ? '#ffebee' : effectiveIns === 'pending' ? '#fff3e0' : '#e8f5e9';
-      const eligColor = eligStatus === 'expired' ? '#c62828' : eligStatus === 'active' ? '#2e7d32' : '#ff9800';
-      const eligBg = eligStatus === 'expired' ? '#ffebee' : eligStatus === 'active' ? '#e8f5e9' : '#fff3e0';
-      html += '<div style="border:1px solid ' + (effectiveIns === 'expired' ? '#f44336' : '#ddd') + ';border-radius:6px;padding:8px;margin-bottom:8px;background:' + (effectiveIns === 'expired' ? '#fff8f8' : '#f9f9f9') + '">';
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
-      html += '<b>' + i.payer_name + ' (' + i.insurance_type + ')</b>';
-      html += '<span style="display:flex;gap:6px;align-items:center">';
-      html += '<span style="background:' + insStatusBg + ';color:' + insStatusColor + ';padding:2px 8px;border-radius:4px;font-weight:bold;font-size:11px">INS: ' + effectiveIns.toUpperCase() + '</span>';
-      if (eligStatus) {
-        html += '<span style="background:' + eligBg + ';color:' + eligColor + ';padding:2px 8px;border-radius:4px;font-weight:bold;font-size:11px">ELIG: ' + eligStatus.toUpperCase() + '</span>';
-      }
-      html += '</span></div>';
-      html += '<div style="font-size:11px">Member ID: <b>' + (i.member_id || '-') + '</b> | Copay: $' + (i.copay || 0) + ' | Deductible: $' + (i.deductible || 0) + '</div>';
-      html += '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">';
-      if (i.member_id) {
-        html += '<button class="btn btn-sm btn-success" onclick="copyMemberAndVerify(\'' + (i.member_id || '') + '\')">&#128203; Copy Member ID & Verify Eligibility</button>';
-      }
-      if (i.card_image_front || i.card_image_back) {
-        html += '<button class="btn btn-sm btn-info" onclick="showInsuranceCard(\'' + (i.payer_name || '') + '\',\'' + (i.card_image_front || '') + '\',\'' + (i.card_image_back || '') + '\')">&#128179; View Insurance Card</button>';
-      }
+    html += '<div style="margin-top:8px;border-top:1px solid #c8e6c9;padding-top:8px"><b>Insurance ('+insCount+'):</b></div>';
+    p.insurances.forEach(function(i) {
+      var es = i.effective_status || i.status || 'active';
+      var esColor = es==='expired'?'#c62828':es==='pending'?'#ff9800':'#2e7d32';
+      var esBg = es==='expired'?'#ffebee':es==='pending'?'#fff3e0':'#e8f5e9';
+      html += '<div style="border:1px solid #ddd;border-radius:6px;padding:8px;margin-top:6px;background:white;display:flex;justify-content:space-between;align-items:center">';
+      html += '<div style="font-size:12px">';
+      html += '<b>'+i.payer_name+'</b> ('+i.insurance_type+') &mdash; Member ID: <b>'+(i.member_id||'-')+'</b>';
+      html += ' | Copay: $'+(i.copay||0)+' | Deductible: $'+(i.deductible||0);
       html += '</div>';
-      html += '<div style="display:flex;gap:10px;margin-top:6px">';
-      if (i.card_image_front) {
-        html += '<img src="' + i.card_image_front + '" style="max-width:250px;max-height:150px;border:1px solid #ccc;border-radius:4px;cursor:pointer" onclick="window.open(this.src)" title="Insurance Card Front">';
-      }
-      if (i.card_image_back) {
-        html += '<img src="' + i.card_image_back + '" style="max-width:250px;max-height:150px;border:1px solid #ccc;border-radius:4px;cursor:pointer" onclick="window.open(this.src)" title="Insurance Card Back">';
-      }
-      if (!i.card_image_front && !i.card_image_back) {
-        html += '<div style="color:#999;font-size:11px">No card images uploaded yet</div>';
-      }
-      html += '</div></div>';
+      html += '<span style="background:'+esBg+';color:'+esColor+';padding:2px 8px;border-radius:4px;font-weight:bold;font-size:11px">'+es.toUpperCase()+'</span>';
+      html += '</div>';
     });
+  } else {
+    html += '<div style="margin-top:8px;border-top:1px solid #c8e6c9;padding-top:8px;color:#c62828;font-weight:bold">No Insurance Linked</div>';
   }
-  const chgRes = await fetch(API + '/api/charges?patient_id=' + pid);
-  const charges = await chgRes.json();
+  var chgRes = await fetch(API + '/api/charges?patient_id=' + pid);
+  var charges = await chgRes.json();
   if (charges.length) {
-    html += '<div style="margin-top:8px"><b>Charges (' + charges.length + '):</b></div>';
-    html += '<table><thead><tr><th>Charge ID</th><th>Date</th><th>Total</th><th>Paid</th><th>Status</th></tr></thead><tbody>';
-    charges.forEach(c => {
+    html += '<div style="margin-top:8px;border-top:1px solid #c8e6c9;padding-top:8px"><b>Previous Charges ('+charges.length+'):</b></div>';
+    html += '<table><thead><tr><th>ID</th><th>Date</th><th>Total</th><th>Paid</th><th>Status</th></tr></thead><tbody>';
+    charges.forEach(function(c) {
       var ct = c.total_charges || c.billed_amount || 0; var cp = c.total_paid || c.paid_amount || 0;
       if (typeof ct !== 'number') ct = 0; if (typeof cp !== 'number') cp = 0;
-      html += '<tr><td>' + c.charge_id + '</td><td>' + (c.charge_date || '-') + '</td><td>$' + ct.toFixed(2) + '</td><td>$' + cp.toFixed(2) + '</td><td><span class="status-badge status-' + c.status + '">' + (c.status || '-') + '</span></td></tr>';
+      html += '<tr><td>'+c.charge_id+'</td><td>'+(c.charge_date||'-')+'</td><td>$'+ct.toFixed(2)+'</td><td>$'+cp.toFixed(2)+'</td><td><span class="status-badge status-'+c.status+'">'+(c.status||'-')+'</span></td></tr>';
     });
     html += '</tbody></table>';
   }
   html += '</div>';
-  document.getElementById('chgPatientInfo').innerHTML = html;
+  el.innerHTML = html;
   var depSel = document.getElementById('chgDependent');
-  depSel.innerHTML = '<option value="">-- ' + (p.first_name || '') + ' ' + (p.last_name || '') + ' (Self) --</option>';
-  if (p.dependents && p.dependents.length) {
-    p.dependents.forEach(function(dd) {
-      depSel.innerHTML += '<option value="' + dd.dependent_id + '">' + dd.first_name + ' ' + dd.last_name + ' (' + dd.relationship + ') - DOB: ' + (dd.dob || '-') + '</option>';
-    });
+  if (depSel) {
+    depSel.innerHTML = '<option value="">-- '+(p.first_name||'')+' '+(p.last_name||'')+' (Self) --</option>';
+    if (p.dependents && p.dependents.length) {
+      p.dependents.forEach(function(dd) {
+        depSel.innerHTML += '<option value="'+dd.dependent_id+'">'+dd.first_name+' '+dd.last_name+' ('+dd.relationship+') - DOB: '+(dd.dob||'-')+'</option>';
+      });
+    }
   }
 }
 
@@ -6979,7 +7003,7 @@ async function chgLoadRecent() {
     html += '<td><b>' + p.patient_id + '</b></td><td>' + (p.mrn||'-') + '</td><td>' + p.first_name + ' ' + p.last_name + '</td>';
     html += '<td>' + (p.dob||'-') + '</td><td>' + (p.phone||'-') + '</td><td style="font-size:11px">' + insNames + '</td>';
     html += '<td><b>' + p.charge_count + '</b></td><td>$' + (p.total_billed||0).toFixed(2) + '</td><td>$' + (p.total_paid||0).toFixed(2) + '</td>';
-    html += '<td><button class="btn btn-sm btn-success" onclick="event.stopPropagation();chgLoadPatientById(\'' + p.patient_id + '\')">Load</button></td></tr>';
+    html += '<td><button class="btn btn-sm btn-success" onclick="event.stopPropagation();chgQuickLoad(\'' + p.patient_id + '\')">Load</button></td></tr>';
   });
   html += '</tbody></table>';
   el.innerHTML = html;
@@ -6988,6 +7012,7 @@ async function chgLoadRecent() {
 function chgQuickLoad(patientId) {
   document.getElementById('chgSearchQ').value = patientId;
   chgSearchPatient();
+  document.getElementById('chgSearchQ').scrollIntoView({behavior:'smooth',block:'center'});
 }
 
 function showInsuranceCard(payer, front, back) {

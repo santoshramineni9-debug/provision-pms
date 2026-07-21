@@ -356,10 +356,15 @@
       return { data: {verified:true,patient:patient,insurance:ins,benefits:[{type:'Medical',covered:true,copay:'$30'},{type:'Prescription',covered:true,copay:'$15'}]} };
     }
     if ((m = path.match(/^\/api\/eligibility\/verify-member\/(.+)$/))) {
-      var memberId = decodeURIComponent(m[1]);
-      var ins = getStore('insurances').find(function(i){return (i.policy_number||'').toLowerCase()===memberId.toLowerCase();});
-      if (!ins) return { data: {verified:false,error:'Member not found'} };
-      return { data: {verified:true,insurance:ins,benefits:[{type:'Medical',covered:true,copay:'$30'}]} };
+      var memberId = decodeURIComponent(m[1]).trim();
+      var allIns = getStore('insurances');
+      var allPatients = getStore('patients');
+      var ins = allIns.find(function(i){ return (i.member_id||'').toLowerCase()===memberId.toLowerCase() || (i.policy_number||'').toLowerCase()===memberId.toLowerCase(); });
+      if (!ins) return { data: {verified:false,error:'Member not found for ID: ' + memberId} };
+      var patient = allPatients.find(function(p){ return p.id===ins.patient_id || p.patient_id===ins.patient_id; });
+      var eligStatus = ins.effective_status || ins.status || 'active';
+      if (ins.termination_date && ins.termination_date < new Date().toISOString().slice(0,10)) eligStatus = 'expired';
+      return { data: {verified:true,status:eligStatus,insurance:ins,patient:patient || null,benefits:[{type:'Medical',covered:true,copay:'$' + (ins.copay||30)}],card_image_front:ins.card_image_front||null,card_image_back:ins.card_image_back||null} };
     }
     if ((m = path.match(/^\/api\/eligibility\/(\d+)$/))) {
       var eid = parseInt(m[1]);
