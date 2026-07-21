@@ -4097,14 +4097,25 @@ function showPatientModal(p) {
     document.getElementById('pCity').value = p.city;
     document.getElementById('pState').value = p.state;
     document.getElementById('pZip').value = p.zip;
+    document.getElementById('pGuarantor').value = p.guarantor || '';
+    document.getElementById('pGuarantorPhone').value = p.guarantor_phone || '';
+    document.getElementById('pGuarantorRelation').value = p.guarantor_relation || 'Self';
+  } else {
+    ['pFirstName','pLastName','pDob','pSsn','pPhone','pEmail','pAddress','pCity','pState','pZip','pGuarantor','pGuarantorPhone'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('pGender').value = 'Male';
+    document.getElementById('pGuarantorRelation').value = 'Self';
   }
   document.getElementById('modal-patient').classList.add('active');
 }
 async function savePatient() {
+  const first = document.getElementById('pFirstName').value.trim();
+  const last = document.getElementById('pLastName').value.trim();
+  const dob = document.getElementById('pDob').value.trim();
+  if (!first || !last || !dob) { showToast('First Name, Last Name and DOB are required', 'error'); return; }
   const data = {
-    first_name: document.getElementById('pFirstName').value,
-    last_name: document.getElementById('pLastName').value,
-    dob: document.getElementById('pDob').value,
+    first_name: first,
+    last_name: last,
+    dob: dob,
     gender: document.getElementById('pGender').value,
     ssn: document.getElementById('pSsn').value,
     phone: document.getElementById('pPhone').value,
@@ -4117,10 +4128,15 @@ async function savePatient() {
     guarantor_phone: document.getElementById('pGuarantorPhone').value,
     guarantor_relation: document.getElementById('pGuarantorRelation').value
   };
-  await fetch(API + '/api/patients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-  closeModal('modal-patient');
-  showToast('Patient created');
-  loadPatients();
+  try {
+    const res = await fetch(API + '/api/patients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    const result = await res.json();
+    closeModal('modal-patient');
+    showToast('Patient created: ' + (result.patient_id || ''));
+    loadPatients();
+  } catch(e) {
+    showToast('Error saving patient: ' + e.message, 'error');
+  }
 }
 async function viewPatient(pid) {
   const res = await fetch(API + '/api/patients/' + pid);
