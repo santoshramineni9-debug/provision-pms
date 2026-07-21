@@ -407,10 +407,10 @@
       <div class="card">
         <div class="card-title">Search Patient</div>
         <div class="form-grid">
-          <div class="form-group"><label>Patient ID, MRN, Name, Phone or DOB *</label><input id="chgSearchQ" placeholder="e.g. PAT001, MRN00001, John, 555-0101, 1985-03-15" onkeyup="if(event.key==='Enter')chgSearchPatient()"></div>
+          <div class="form-group"><label>Patient ID or MRN *</label><input id="chgSearchQ" placeholder="e.g. PAT001 or MRN00001" onkeyup="if(event.key==='Enter')chgSearchPatient()"></div>
           <div class="form-group" style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="chgSearchPatient()">Search</button> <button class="btn btn-success" onclick="showPatientModal();window._chgReturnToCharge=true">+ New Patient</button></div>
         </div>
-        <div id="chgPatientInfo" style="margin-top:10px"></div>
+    <div id="chgModalPatientInfo" style="margin-top:10px"></div>
       </div>
       <div class="card" id="chgRecentCard">
         <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
@@ -3028,12 +3028,23 @@
     </div>
     <div id="chgAuthValidity" style="margin-top:4px;font-size:11px"></div>
 
-    <div class="card-title" style="margin-top:12px">Line Items</div>
-    <div id="chgLineItems"></div>
-    <button class="btn btn-info btn-sm" onclick="addChargeLine()">+ Add Line</button>
-    <div class="actions" style="margin-top:12px">
-      <button class="btn btn-success" onclick="saveCharge()">Save Charge</button>
-      <button class="btn btn-secondary" onclick="closeModal('modal-charge')">Cancel</button>
+    <div class="card-title" style="margin-top:12px">Line Items (ICD / CPT / Modifier / Pointer)</div>
+    <div style="overflow-x:auto">
+    <table style="font-size:11px;width:100%;border-collapse:collapse">
+      <thead><tr style="background:#1a237e;color:white">
+        <th style="padding:4px;text-align:left;width:25%">ICD-10 Code</th>
+        <th style="padding:4px;text-align:left;width:25%">CPT Code</th>
+        <th style="padding:4px;text-align:left;width:15%">Modifier</th>
+        <th style="padding:4px;text-align:left;width:15%">Units</th>
+        <th style="padding:4px;text-align:left;width:15%">Charge $</th>
+        <th style="padding:4px;text-align:left;width:20%">Pointer (ICD→CPT)</th>
+      </tr></thead>
+      <tbody id="chgLineGrid"></tbody>
+    </table>
+    </div>
+    <div class="actions" style="margin-top:12px;display:flex;gap:8px;align-items:center">
+      <button class="btn btn-success" type="button" onclick="saveCharge()">Save Charge</button>
+      <button class="btn btn-secondary" type="button" onclick="closeModal('modal-charge')">Cancel</button>
     </div>
   </div>
 </div>
@@ -6839,7 +6850,7 @@ async function cancelApt(id) {
 }
 
 // ============ CHARGES ============
-let chargeLines = [];
+let _chargeLinesCompat = [];
 
 async function chgSearchPatient() {
   const q = document.getElementById('chgSearchQ').value.trim();
@@ -6858,7 +6869,7 @@ async function chgSearchPatient() {
       html += '<td><button class="btn btn-sm btn-success">Select</button></td></tr>';
     });
     html += '</tbody></table>';
-    document.getElementById('chgPatientInfo').innerHTML = html;
+  document.getElementById('chgModalPatientInfo').innerHTML = html;
   } else {
     document.getElementById('chgPatientInfo').innerHTML = '<div style="color:#c62828;font-weight:bold">No patient found for: ' + q + '</div>';
   }
@@ -7043,8 +7054,7 @@ async function routeToRejectionTeamFromCharge(chargeId) {
 }
 async function showChargeModal() {
   await loadProvidersForSelect();
-  chargeLines = [{ service_date: '', icd_codes: '', cpt_code: '', modifier1: '', modifier2: '', modifier3: '', modifier4: '', pointer1: '', pointer2: '', pointer3: '', units: 1, charge_amount: 0 }];
-  renderChargeLines();
+  renderChargeGrid();
   document.getElementById('chgInsPrimaryBlock').style.display = 'none';
   document.getElementById('chgInsSecondaryBlock').style.display = 'none';
   document.getElementById('chgInsTertiaryBlock').style.display = 'none';
@@ -7062,8 +7072,7 @@ async function showChargeModal() {
 
 async function openChargeForPatient(patientId) {
   await loadProvidersForSelect();
-  chargeLines = [{ service_date: new Date().toISOString().slice(0,10), icd_codes: '', cpt_code: '', modifier1: '', modifier2: '', modifier3: '', modifier4: '', pointer1: '', pointer2: '', pointer3: '', units: 1, charge_amount: 0 }];
-  renderChargeLines();
+  renderChargeGrid();
   document.getElementById('chgPid').value = patientId;
   document.getElementById('chgDate').value = new Date().toISOString().slice(0, 10);
   document.getElementById('chgInsPrimaryBlock').style.display = 'none';
@@ -7077,35 +7086,44 @@ async function openChargeForPatient(patientId) {
   document.getElementById('modal-charge').classList.add('active');
   loadChargePatient();
 }
-function renderChargeLines() {
-  document.getElementById('chgLineItems').innerHTML = chargeLines.map((l, i) => `
-    <div class="form-grid" style="margin-bottom:8px;padding:8px;background:#f8f9ff;border-radius:4px">
-      <div class="form-group"><label>Service Date</label><input type="date" value="${l.service_date}" onchange="chargeLines[${i}].service_date=this.value"></div>
-      <div class="form-group"><label>ICD Codes (comma sep)</label><input value="${l.icd_codes}" placeholder="ICD1,ICD2,ICD3" onchange="chargeLines[${i}].icd_codes=this.value"></div>
-      <div class="form-group"><label>CPT Code</label><input value="${l.cpt_code}" onchange="chargeLines[${i}].cpt_code=this.value"></div>
-      <div class="form-group"><label>Modifier 1</label><input value="${l.modifier1}" onchange="chargeLines[${i}].modifier1=this.value"></div>
-      <div class="form-group"><label>Modifier 2</label><input value="${l.modifier2}" onchange="chargeLines[${i}].modifier2=this.value"></div>
-      <div class="form-group"><label>Modifier 3</label><input value="${l.modifier3}" onchange="chargeLines[${i}].modifier3=this.value"></div>
-      <div class="form-group"><label>Modifier 4</label><input value="${l.modifier4}" onchange="chargeLines[${i}].modifier4=this.value"></div>
-      <div class="form-group"><label>Pointer 1</label><input value="${l.pointer1}" onchange="chargeLines[${i}].pointer1=this.value"></div>
-      <div class="form-group"><label>Pointer 2</label><input value="${l.pointer2}" onchange="chargeLines[${i}].pointer2=this.value"></div>
-      <div class="form-group"><label>Pointer 3</label><input value="${l.pointer3}" onchange="chargeLines[${i}].pointer3=this.value"></div>
-      <div class="form-group"><label>Units</label><input type="number" value="${l.units}" onchange="chargeLines[${i}].units=+this.value"></div>
-      <div class="form-group"><label>Charge Amount</label><input type="number" step="0.01" value="${l.charge_amount}" onchange="chargeLines[${i}].charge_amount=+this.value"></div>
-      <div class="form-group" style="display:flex;align-items:flex-end"><button class="btn btn-danger btn-sm" onclick="chargeLines.splice(${i},1);renderChargeLines()">Remove</button></div>
-    </div>
-  `).join('');
+function renderChargeGrid() {
+  var html = '';
+  for (var i = 0; i < 5; i++) {
+    var bg = i % 2 === 0 ? '#f8f9fa' : '#fff';
+    html += '<tr style="background:' + bg + '">';
+    html += '<td style="padding:3px"><input id="clIcd' + i + '" placeholder="e.g. E11.9" style="width:100%;font-size:11px;padding:3px;border:1px solid #ccc;border-radius:3px"></td>';
+    html += '<td style="padding:3px"><input id="clCpt' + i + '" placeholder="e.g. 99214" style="width:100%;font-size:11px;padding:3px;border:1px solid #ccc;border-radius:3px"></td>';
+    html += '<td style="padding:3px"><input id="clMod' + i + '" placeholder="25" style="width:100%;font-size:11px;padding:3px;border:1px solid #ccc;border-radius:3px"></td>';
+    html += '<td style="padding:3px"><input id="clUnits' + i + '" type="number" value="1" min="1" style="width:100%;font-size:11px;padding:3px;border:1px solid #ccc;border-radius:3px"></td>';
+    html += '<td style="padding:3px"><input id="clCharge' + i + '" type="number" step="0.01" value="0" style="width:100%;font-size:11px;padding:3px;border:1px solid #ccc;border-radius:3px"></td>';
+    html += '<td style="padding:3px"><input id="clPointer' + i + '" placeholder="e.g. 1,2" style="width:100%;font-size:11px;padding:3px;border:1px solid #ccc;border-radius:3px" title="Which ICD row(s) this CPT maps to"></td>';
+    html += '</tr>';
+  }
+  document.getElementById('chgLineGrid').innerHTML = html;
 }
-function addChargeLine() {
-  chargeLines.push({ service_date: '', icd_codes: '', cpt_code: '', modifier1: '', modifier2: '', modifier3: '', modifier4: '', pointer1: '', pointer2: '', pointer3: '', units: 1, charge_amount: 0 });
-  renderChargeLines();
+function getChargeLineItems() {
+  var lines = [];
+  for (var i = 0; i < 5; i++) {
+    var cpt = (document.getElementById('clCpt' + i) || {}).value || '';
+    var icd = (document.getElementById('clIcd' + i) || {}).value || '';
+    if (!cpt && !icd) continue;
+    lines.push({
+      cpt_code: cpt,
+      icd_codes: icd,
+      modifier1: (document.getElementById('clMod' + i) || {}).value || '',
+      units: parseInt((document.getElementById('clUnits' + i) || {}).value) || 1,
+      charge_amount: parseFloat((document.getElementById('clCharge' + i) || {}).value) || 0,
+      pointer: (document.getElementById('clPointer' + i) || {}).value || ''
+    });
+  }
+  return lines;
 }
 async function loadChargePatient() {
-  const pid = document.getElementById('chgPid').value.trim();
-  if (!pid) { document.getElementById('chgPatientInfo').innerHTML = ''; return; }
+  const pid = (document.getElementById('chgPid') || {}).value.trim();
+  if (!pid) { var el = document.getElementById('chgModalPatientInfo'); if (el) el.innerHTML = ''; return; }
   const res = await fetch(API + '/api/patients/' + pid);
   const p = await res.json();
-  if (p.error) { document.getElementById('chgPatientInfo').innerHTML = '<div style="color:#c62828;font-weight:bold">Patient not found: ' + pid + '</div>'; return; }
+  if (p.error) { document.getElementById('chgModalPatientInfo').innerHTML = '<div style="color:#c62828;font-weight:bold">Patient not found: ' + pid + '</div>'; return; }
   let html = '<div style="background:#e8f5e9;border:1px solid #4caf50;border-radius:6px;padding:10px">';
   html += '<div class="grid-3">';
   html += '<div class="info-row"><span class="label">Name:</span> ' + (p.first_name || '') + ' ' + (p.last_name || '') + '</div>';
@@ -7484,50 +7502,61 @@ async function chgSaveNewPatient(memberId) {
 }
 
 async function saveCharge() {
+  try {
+  var pid = (document.getElementById('chgPid') || {}).value || '';
+  if (!pid) { showToast('Enter Patient ID first', 'error'); return; }
+  var lineItems = getChargeLineItems();
+  if (!lineItems.length) { showToast('Add at least one line item (ICD or CPT)', 'error'); return; }
+  var totalCharges = 0;
+  lineItems.forEach(function(li) { totalCharges += (li.charge_amount || 0) * (li.units || 1); });
   const data = {
-    patient_id: document.getElementById('chgPid').value,
-    provider_id: document.getElementById('chgProvider').value,
-    charge_date: document.getElementById('chgDate').value,
+    patient_id: pid,
+    provider_id: (document.getElementById('chgProvider') || {}).value || '',
+    charge_date: (document.getElementById('chgDate') || {}).value || new Date().toISOString().slice(0,10),
     insurance_id: (document.getElementById('chgInsurancePrimary') || {}).value || null,
     secondary_insurance_id: (document.getElementById('chgInsuranceSecondary') || {}).value || null,
     tertiary_insurance_id: (document.getElementById('chgInsuranceTertiary') || {}).value || null,
-    insurance_type: (document.getElementById('chgInsurancePrimary') || {}).value ? 'primary' : null,
-    line_items: chargeLines,
-    msp_code: document.getElementById('chgMSPCode').value || null,
-    msp_qualifying_person_name: document.getElementById('chgMSPName').value || null,
-    msp_qualifying_person_dob: document.getElementById('chgMSPDOB').value || null,
-    msp_coverage_start: document.getElementById('chgMSPStart').value || null,
-    date_of_injury: document.getElementById('chgDOI').value || null,
-    place_of_accident: document.getElementById('chgPlaceAccident').value || null,
-    accident_type: document.getElementById('chgAccidentType').value || null,
-    employer_name: document.getElementById('chgEmployerName').value || null,
-    employer_address: document.getElementById('chgEmployerAddress').value || null,
-    employer_phone: document.getElementById('chgEmployerPhone').value || null,
-    workers_comp_claim: document.getElementById('chgWCClaim').value || null,
-    workers_comp_carrier: document.getElementById('chgWCCarrier').value || null,
-    auto_claim_number: document.getElementById('chgAutoClaim').value || null,
-    auto_insurance_carrier: document.getElementById('chgAutoCarrier').value || null,
-    eligibility_status: document.getElementById('chgEligResult').innerHTML.includes('ACTIVE') ? 'active' : document.getElementById('chgEligResult').innerHTML.includes('EXPIRED') ? 'expired' : document.getElementById('chgEligResult').innerHTML.includes('INACTIVE') ? 'inactive' : null,
-    eligibility_checked_at: document.getElementById('chgEligResult').innerHTML ? new Date().toISOString() : null,
-    auth_number: document.getElementById('chgAuthNum').value || null,
-    auth_from_date: document.getElementById('chgAuthFrom').value || null,
-    auth_to_date: document.getElementById('chgAuthTo').value || null
+    insurance_type: ((document.getElementById('chgInsurancePrimary') || {}).value) ? 'primary' : null,
+    line_items: lineItems,
+    total_charges: totalCharges,
+    billed_amount: totalCharges,
+    msp_code: (document.getElementById('chgMSPCode') || {}).value || null,
+    msp_qualifying_person_name: (document.getElementById('chgMSPName') || {}).value || null,
+    msp_qualifying_person_dob: (document.getElementById('chgMSPDOB') || {}).value || null,
+    msp_coverage_start: (document.getElementById('chgMSPStart') || {}).value || null,
+    date_of_injury: (document.getElementById('chgDOI') || {}).value || null,
+    place_of_accident: (document.getElementById('chgPlaceAccident') || {}).value || null,
+    accident_type: (document.getElementById('chgAccidentType') || {}).value || null,
+    employer_name: (document.getElementById('chgEmployerName') || {}).value || null,
+    employer_address: (document.getElementById('chgEmployerAddress') || {}).value || null,
+    employer_phone: (document.getElementById('chgEmployerPhone') || {}).value || null,
+    workers_comp_claim: (document.getElementById('chgWCClaim') || {}).value || null,
+    workers_comp_carrier: (document.getElementById('chgWCCarrier') || {}).value || null,
+    auto_claim_number: (document.getElementById('chgAutoClaim') || {}).value || null,
+    auto_insurance_carrier: (document.getElementById('chgAutoCarrier') || {}).value || null,
+    eligibility_status: ((document.getElementById('chgEligResult') || {}).innerHTML || '').indexOf('ACTIVE') >= 0 ? 'active' : ((document.getElementById('chgEligResult') || {}).innerHTML || '').indexOf('EXPIRED') >= 0 ? 'expired' : null,
+    auth_number: (document.getElementById('chgAuthNum') || {}).value || null,
+    auth_from_date: (document.getElementById('chgAuthFrom') || {}).value || null,
+    auth_to_date: (document.getElementById('chgAuthTo') || {}).value || null
   };
   if (data.insurance_id === 'self-pay') data.insurance_id = null;
   if (data.secondary_insurance_id === 'self-pay') data.secondary_insurance_id = null;
   if (data.tertiary_insurance_id === 'self-pay') data.tertiary_insurance_id = null;
   if (!data.insurance_id && !data.secondary_insurance_id && !data.tertiary_insurance_id) {
-    if (!confirm('No insurance selected. This will be saved as Self-Pay. Continue?')) return;
+    if (!confirm('No insurance selected. Save as Self-Pay?')) return;
     data.insurance_type = 'self-pay';
   }
   const res = await fetch(API + '/api/charges', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
   const result = await res.json();
-  const total = (result.total_charges || 0).toFixed ? (result.total_charges || 0).toFixed(2) : '0.00';
+  var total = (result.total_charges || 0);
+  if (typeof total === 'number') total = total.toFixed(2); else total = '0.00';
   showToast('Charge created: ' + (result.charge_id || 'N/A') + ' | Total: $' + total);
   closeModal('modal-charge');
   loadCharges();
-  if (confirm('Charge ' + (result.charge_id || '') + ' created! Generate CMS-1500 now?')) {
-    generateAndPrintCMS1500(result.charge_id);
+  chgLoadRecent();
+  } catch(e) {
+    console.error('saveCharge error:', e);
+    showToast('Error saving charge: ' + e.message, 'error');
   }
 }
 
