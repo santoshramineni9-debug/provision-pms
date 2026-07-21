@@ -37,11 +37,11 @@
     setStore('patients', patients);
 
     var insurances = [
-      {id:1,patient_id:1,payer_name:'Aetna',policy_number:'AET-332190',group_number:'GRP-5521',subscriber_name:'John Smith',relationship:'Self',plan_type:'PPO',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active'},
-      {id:2,patient_id:2,payer_name:'Blue Cross Blue Shield',policy_number:'BCBS-784521',group_number:'GRP-3344',subscriber_name:'Maria Garcia',relationship:'Self',plan_type:'HMO',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active'},
-      {id:3,patient_id:3,payer_name:'UnitedHealthcare',policy_number:'UHC-991234',group_number:'GRP-7788',subscriber_name:'Robert Johnson',relationship:'Self',plan_type:'PPO',effective_date:'2026-03-01',termination_date:'2027-02-28',status:'active'},
-      {id:4,patient_id:4,payer_name:'Cigna',policy_number:'CIG-445678',group_number:'GRP-2211',subscriber_name:'Sarah Williams',relationship:'Self',plan_type:'EPO',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active'},
-      {id:5,patient_id:5,payer_name:'Aetna',policy_number:'AET-556789',group_number:'GRP-5521',subscriber_name:'David Brown',relationship:'Self',plan_type:'POS',effective_date:'2026-02-01',termination_date:'2027-01-31',status:'active'}
+      {id:1,patient_id:1,payer_name:'Aetna',policy_number:'AET-332190',member_id:'AET-M001',group_number:'GRP-5521',subscriber_name:'John Smith',relationship:'Self',plan_type:'PPO',copay:30,deductible:500,coinsurance:20,insurance_type:'primary',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active',effective_status:'active'},
+      {id:2,patient_id:2,payer_name:'Blue Cross Blue Shield',policy_number:'BCBS-784521',member_id:'BCBS-M002',group_number:'GRP-3344',subscriber_name:'Maria Garcia',relationship:'Self',plan_type:'HMO',copay:25,deductible:300,coinsurance:15,insurance_type:'primary',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active',effective_status:'active'},
+      {id:3,patient_id:3,payer_name:'UnitedHealthcare',policy_number:'UHC-991234',member_id:'UHC-M003',group_number:'GRP-7788',subscriber_name:'Robert Johnson',relationship:'Self',plan_type:'PPO',copay:35,deductible:750,coinsurance:25,insurance_type:'primary',effective_date:'2026-03-01',termination_date:'2027-02-28',status:'active',effective_status:'active'},
+      {id:4,patient_id:4,payer_name:'Cigna',policy_number:'CIG-445678',member_id:'CIG-M004',group_number:'GRP-2211',subscriber_name:'Sarah Williams',relationship:'Self',plan_type:'EPO',copay:20,deductible:400,coinsurance:10,insurance_type:'primary',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active',effective_status:'active'},
+      {id:5,patient_id:5,payer_name:'Aetna',policy_number:'AET-556789',member_id:'AET-M005',group_number:'GRP-5521',subscriber_name:'David Brown',relationship:'Self',plan_type:'POS',copay:40,deductible:600,coinsurance:30,insurance_type:'primary',effective_date:'2026-02-01',termination_date:'2027-01-31',status:'active',effective_status:'active'}
     ];
     setStore('insurances', insurances);
 
