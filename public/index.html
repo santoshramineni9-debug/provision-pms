@@ -579,7 +579,7 @@
 
         <!-- CORRECTED CLAIM TAB -->
         <div class="tab-content" id="arTab-corrected">
-          <div class="card-title" style="color:#1565c0">Corrected Claim — Correct &rarr; Submit &rarr; CMS-1500</div>
+          <div class="card-title" style="color:#1565c0">Corrected Claim â€” Correct &rarr; Submit &rarr; CMS-1500</div>
           <div class="form-grid">
             <div class="form-group"><label>Patient ID *</label><input id="arcPid" onblur="arcLoadPatient()"></div>
             <div class="form-group"><label>Charge ID *</label><input id="arcChargeId" placeholder="e.g. CHG001" onblur="arcLoadCharge()"></div>
@@ -588,7 +588,7 @@
           <div id="arcPatientPanel" style="margin-top:8px"></div>
           <div id="arcCurrentCharge" style="margin-top:10px"></div>
           <div id="arcCorrectionForm" style="display:none;margin-top:10px">
-            <div class="card-title" style="color:#e65100">Correction Details — Updated CPT / ICD / Modifiers</div>
+            <div class="card-title" style="color:#e65100">Correction Details â€” Updated CPT / ICD / Modifiers</div>
             <div class="form-grid">
               <div class="form-group"><label>Claim Type *</label><select id="arcClaimType"><option value="1">1 - Fresh Claim</option><option value="7">7 - Replacement Claim</option><option value="8">8 - Void Claim</option></select></div>
               <div class="form-group"><label>Place of Service</label><select id="arcPlace"><option value="11">11 - Office</option><option value="21">21 - Inpatient Hospital</option><option value="22">22 - Outpatient Hospital</option><option value="23">23 - ER</option><option value="24">24 - Ambulatory Surgical</option><option value="31">31 - Skilled Nursing</option><option value="51">51 - Inpatient Psych</option><option value="71">71 - Public Health Clinic</option><option value="99">99 - Other</option></select></div>
@@ -2284,15 +2284,15 @@
               <button class="calc-btn" onclick="calcInput('C')">C</button>
               <button class="calc-btn" onclick="calcInput('(')">(</button>
               <button class="calc-btn" onclick="calcInput(')')">)</button>
-              <button class="calc-btn calc-op" onclick="calcInput('/')">÷</button>
+              <button class="calc-btn calc-op" onclick="calcInput('/')">Ã·</button>
               <button class="calc-btn" onclick="calcInput('7')">7</button>
               <button class="calc-btn" onclick="calcInput('8')">8</button>
               <button class="calc-btn" onclick="calcInput('9')">9</button>
-              <button class="calc-btn calc-op" onclick="calcInput('*')">×</button>
+              <button class="calc-btn calc-op" onclick="calcInput('*')">Ã—</button>
               <button class="calc-btn" onclick="calcInput('4')">4</button>
               <button class="calc-btn" onclick="calcInput('5')">5</button>
               <button class="calc-btn" onclick="calcInput('6')">6</button>
-              <button class="calc-btn calc-op" onclick="calcInput('-')">−</button>
+              <button class="calc-btn calc-op" onclick="calcInput('-')">âˆ’</button>
               <button class="calc-btn" onclick="calcInput('1')">1</button>
               <button class="calc-btn" onclick="calcInput('2')">2</button>
               <button class="calc-btn" onclick="calcInput('3')">3</button>
@@ -3049,7 +3049,7 @@
         <th style="padding:4px;text-align:left;width:15%">Modifier</th>
         <th style="padding:4px;text-align:left;width:15%">Units</th>
         <th style="padding:4px;text-align:left;width:15%">Charge $</th>
-        <th style="padding:4px;text-align:left;width:20%">Pointer (ICD→CPT)</th>
+        <th style="padding:4px;text-align:left;width:20%">Pointer (ICDâ†’CPT)</th>
       </tr></thead>
       <tbody id="chgLineGrid"></tbody>
     </table>
@@ -4063,61 +4063,195 @@ async function uploadInsCard(insId, patientId, side, input) {
 }
 
 async function verifyEligByMember() {
-  const memberId = document.getElementById('eligMemberId').value.trim();
+  var memberId = document.getElementById('eligMemberId').value.trim();
   if (!memberId) { showToast('Enter Member ID from Insurance Card','error'); return; }
   document.getElementById('eligMemberResult').innerHTML = '<div style="color:#1976d2;font-weight:bold">Verifying eligibility for: '+memberId+'...</div>';
   try {
-    const res = await fetch(API + '/api/eligibility/verify-member/' + encodeURIComponent(memberId));
-    const data = await res.json();
-    let html = '';
-    if (data.verified && data.status === 'active' && data.patient) {
-      var p = data.patient, ins = data.insurance || {};
-      html += '<div style="background:#e8f5e9;border:2px solid #4caf50;border-radius:8px;padding:12px">';
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">';
-      html += '<div style="font-size:16px;font-weight:bold;color:#2e7d32">&#10003; ELIGIBLE - ACTIVE</div>';
-      html += '<button class="btn btn-success" onclick="chgAutoLoadFromElig(\''+p.patient_id+'\')">Load Patient for Charge Entry</button>';
-      html += '</div>';
-      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">';
-      html += '<div style="background:white;border:1px solid #4caf50;border-radius:6px;padding:10px">';
-      html += '<div style="font-weight:bold;color:#2e7d32;margin-bottom:6px">Patient Info</div>';
-      html += '<div style="font-size:12px;line-height:1.8">';
-      html += '<b>ID:</b> '+p.patient_id+' &nbsp; <b>MRN:</b> '+(p.mrn||'-')+'<br>';
-      html += '<b>Name:</b> '+p.first_name+' '+p.last_name+'<br>';
-      html += '<b>DOB:</b> '+(p.dob||'-')+' &nbsp; <b>Phone:</b> '+(p.phone||'-')+'<br>';
-      html += '<b>Address:</b> '+(p.address||'')+(p.city?', '+p.city:'')+(p.state?', '+p.state:'')+(p.zip?' '+p.zip:'');
-      html += '</div></div>';
-      html += '<div style="background:white;border:1px solid #4caf50;border-radius:6px;padding:10px">';
-      html += '<div style="font-weight:bold;color:#2e7d32;margin-bottom:6px">Insurance Info</div>';
-      html += '<div style="font-size:12px;line-height:1.8">';
-      html += '<b>Payer:</b> '+(ins.payer_name||'-')+'<br>';
-      html += '<b>Member ID:</b> '+(ins.member_id||'-')+'<br>';
-      html += '<b>Group:</b> '+(ins.group_number||'-')+'<br>';
-      html += '<b>Plan:</b> '+(ins.plan_type||'-')+' &nbsp; <b>Type:</b> '+(ins.insurance_type||'primary')+'<br>';
-      html += '<b>Copay:</b> $'+(ins.copay||0)+' &nbsp; <b>Deductible:</b> $'+(ins.deductible||0)+'<br>';
-      html += '<b>Status:</b> <span style="color:#2e7d32;font-weight:bold">'+(ins.effective_status||'ACTIVE').toUpperCase()+'</span>';
-      html += '</div></div></div>';
-      html += '<div style="font-size:11px;color:#888;margin-top:6px">Patient auto-loaded into charge entry below</div>';
-      html += '</div>';
-      document.getElementById('eligMemberResult').innerHTML = html;
-      chgAutoLoadFromElig(p.patient_id);
-    } else if (data.verified && data.status === 'expired') {
-      html += '<div style="background:#fff3e0;border:2px solid #ff9800;border-radius:8px;padding:12px">';
-      html += '<div style="font-size:16px;font-weight:bold;color:#e65100">&#9888; EXPIRED</div>';
-      if (data.patient) html += '<div style="margin-top:4px"><b>Patient:</b> '+data.patient.first_name+' '+data.patient.last_name+' ('+data.patient.patient_id+')</div>';
-      if (data.insurance) html += '<div><b>Payer:</b> '+data.insurance.payer_name+' | <b>Member ID:</b> '+data.insurance.member_id+'</div>';
-      html += '<div style="color:#c62828;margin-top:4px">Eligibility expired. Cannot create charge.</div>';
-      html += '</div>';
-      document.getElementById('eligMemberResult').innerHTML = html;
-    } else {
-      html += '<div style="background:#ffebee;border:2px solid #f44336;border-radius:8px;padding:12px">';
-      html += '<div style="font-size:16px;font-weight:bold;color:#c62828">&#10007; '+(data.error||data.message||'MEMBER NOT FOUND')+'</div>';
-      html += '<div style="font-size:12px;margin-top:4px">No patient found with Member ID: <b>'+memberId+'</b>. Try searching by Patient ID or Name below.</div>';
-      html += '</div>';
-      document.getElementById('eligMemberResult').innerHTML = html;
+    var res = await fetch(API + '/api/eligibility/verify-member/' + encodeURIComponent(memberId));
+    var data = await res.json();
+    if (!data.verified || !data.patient) {
+      document.getElementById('eligMemberResult').innerHTML = '<div style="background:#ffebee;border:2px solid #f44336;border-radius:8px;padding:12px"><div style="font-weight:bold;color:#c62828">&#10007; '+(data.error||'MEMBER NOT FOUND')+'</div><div style="font-size:12px;margin-top:4px">No patient found for Member ID: <b>'+memberId+'</b>. Try searching by Patient ID or Name below.</div></div>';
+      return;
     }
+    var p = data.patient, ins = data.insurance, pr = data.payer_response || {}, allCov = data.all_coverages || [], otherCov = data.other_coverages || [];
+    var today = new Date().toISOString().slice(0,10);
+    var primaryExpired = allCov.filter(function(c){ return c.insurance_type==='primary'; }).some(function(c){ return (c.termination_date||'') < today && c.termination_date; });
+    var html = '';
+    html += '<div style="background:white;border:2px solid #0d47a1;border-radius:10px;overflow:hidden">';
+    html += '<div style="background:linear-gradient(135deg,#0d47a1,#1565c0);color:white;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">';
+    html += '<div style="font-size:16px;font-weight:bold">&#9989; Eligibility Verification - Payer Response</div>';
+    html += '<div style="font-size:12px;background:rgba(255,255,255,0.2);padding:4px 10px;border-radius:4px">'+p.first_name+' '+p.last_name+' | '+p.patient_id+'</div>';
+    html += '</div>';
+    html += '<div style="padding:14px">';
+    html += '<div id="eligAlerts" style="margin-bottom:12px">';
+    if (data.status === 'expired' && primaryExpired) {
+      html += '<div style="background:#fff3e0;border:1px solid #ff9800;border-left:4px solid #ff9800;border-radius:6px;padding:10px 14px;margin-bottom:8px">';
+      html += '<div style="display:flex;align-items:flex-start;gap:10px">';
+      html += '<span style="background:#ff9800;color:white;border-radius:50%;min-width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:13px;margin-top:1px">!</span>';
+      html += '<div><div style="font-weight:bold;color:#e65100;font-size:13px">&#9888; Subscriber Mismatch</div>';
+      html += '<div style="font-size:12px;color:#555;margin-top:4px">The payer responded with subscriber information that does not match the information submitted in the inquiry.</div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">';
+      html += '<div style="background:white;border:1px solid #ffcc80;border-radius:4px;padding:8px;font-size:11px"><b style="color:#e65100">Inquiry Info (Our Data)</b><br><br><b>Name:</b> '+p.first_name+' '+p.last_name+'<br><b>Address:</b> '+(p.address||'')+(p.city?', '+p.city:'')+(p.state?', '+p.state:'')+(p.zip?' '+p.zip:'')+'</div>';
+      html += '<div style="background:white;border:1px solid #ffcc80;border-radius:4px;padding:8px;font-size:11px"><b style="color:#e65100">Payer Response Info</b><br><br><b>Name:</b> '+(pr.subscriber_name||'-')+'<br><b>Address:</b> '+(pr.subscriber_address||'-')+'</div>';
+      html += '</div></div></div></div>';
+    }
+    if (otherCov.length > 0) {
+      html += '<div style="background:#e3f2fd;border:1px solid #64b5f6;border-left:4px solid #1565c0;border-radius:6px;padding:10px 14px;margin-bottom:8px">';
+      html += '<div style="display:flex;align-items:flex-start;gap:10px">';
+      html += '<span style="background:#1565c0;color:white;border-radius:50%;min-width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:13px;margin-top:1px">i</span>';
+      html += '<div><div style="font-weight:bold;color:#0d47a1;font-size:13px">&#128203; Other Payer Exists</div>';
+      html += '<div style="font-size:12px;color:#555;margin-top:4px">The payer indicated that the patient has other coverage.</div>';
+      html += '<div style="background:white;border:1px solid #90caf9;border-radius:4px;padding:8px;margin-top:6px;font-size:12px">';
+      otherCov.forEach(function(oc) {
+        var ocExpired = (oc.termination_date||'') < today && oc.termination_date;
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #e3f2fd">';
+        html += '<div><b>'+oc.payer_name+'</b> ('+oc.plan_type+') - Member ID: <b>'+(oc.member_id||'-')+'</b> | '+(oc.effective_date||'-')+' to '+(oc.termination_date||'-')+'</div>';
+        html += '<span style="background:'+(ocExpired?'#ffebee':'#e8f5e9')+';color:'+(ocExpired?'#c62828':'#2e7d32')+';padding:2px 8px;border-radius:4px;font-weight:bold;font-size:10px">'+(ocExpired?'EXPIRED':'ACTIVE')+'</span>';
+        html += '</div>';
+      });
+      html += '</div></div></div></div>';
+    }
+    if (data.status === 'active') {
+      html += '<div style="background:#e8f5e9;border:1px solid #81c784;border-left:4px solid #4caf50;border-radius:6px;padding:10px 14px;margin-bottom:8px">';
+      html += '<div style="display:flex;align-items:flex-start;gap:10px">';
+      html += '<span style="background:#4caf50;color:white;border-radius:50%;min-width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;margin-top:1px">&#10003;</span>';
+      html += '<div><div style="font-weight:bold;color:#2e7d32;font-size:13px">Eligibility Verified</div>';
+      html += '<div style="font-size:12px;color:#555;margin-top:2px"><b>'+ins.payer_name+'</b> - Coverage is <b style="color:#2e7d32">ACTIVE</b>';
+      html += ' | Service Type: <b>'+(pr.service_type||'-')+'</b> | Insurance Type: <b>'+(pr.insurance_type_resp||'-')+'</b>';
+      html += ' | Plan: <b>'+(pr.plan_begin_date||'-')+' to '+(pr.plan_end_date||'-')+'</b></div>';
+      html += '</div></div></div>';
+    }
+    html += '</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+    html += '<div style="background:#f5f5f5;border:1px solid #ddd;border-radius:8px;padding:12px">';
+    html += '<div style="font-weight:bold;color:#0d47a1;margin-bottom:8px;font-size:13px">&#128100; Patient Information</div>';
+    html += '<table style="font-size:12px;width:100%;line-height:2">';
+    html += '<tr><td style="color:#666;width:90px"><b>Patient ID</b></td><td>'+p.patient_id+'</td></tr>';
+    html += '<tr><td style="color:#666"><b>MRN</b></td><td>'+(p.mrn||'-')+'</td></tr>';
+    html += '<tr><td style="color:#666"><b>Name</b></td><td><b>'+p.first_name+' '+p.last_name+'</b></td></tr>';
+    html += '<tr><td style="color:#666"><b>DOB</b></td><td>'+(p.dob||'-')+'</td></tr>';
+    html += '<tr><td style="color:#666"><b>Phone</b></td><td>'+(p.phone||'-')+'</td></tr>';
+    html += '<tr><td style="color:#666"><b>Address</b></td><td>'+(p.address||'')+(p.city?', '+p.city:'')+(p.state?', '+p.state:'')+(p.zip?' '+p.zip:'')+'</td></tr>';
+    html += '</table></div>';
+    html += '<div style="background:#e3f2fd;border:1px solid #90caf9;border-radius:8px;padding:12px">';
+    html += '<div style="font-weight:bold;color:#0d47a1;margin-bottom:8px;font-size:13px">Payer Response</div>';
+    html += '<table style="font-size:12px;width:100%;line-height:2">';
+    html += '<tr><td style="color:#666;width:100px"><b>Payer</b></td><td><b>'+(pr.payer_name||'-')+'</b></td></tr>';
+    html += '<tr><td style="color:#666"><b>Address</b></td><td>'+(pr.payer_address||'-')+'</td></tr>';
+    html += '<tr><td style="color:#666"><b>Phone</b></td><td>'+(pr.payer_phone||'-')+'</td></tr>';
+    html += '<tr><td style="color:#666"><b>Website</b></td><td>'+(pr.payer_website||'-')+'</td></tr>';
+    html += '<tr><td style="color:#666"><b>Subscriber</b></td><td>'+(pr.subscriber_name||'-')+'</td></tr>';
+    html += '<tr><td style="color:#666"><b>Service Type</b></td><td>'+(pr.service_type||'-')+'</td></tr>';
+    html += '<tr><td style="color:#666"><b>Insurance Type</b></td><td>'+(pr.insurance_type_resp||'-')+'</td></tr>';
+    html += '<tr><td style="color:#666"><b>Plan Dates</b></td><td>'+(pr.plan_begin_date||'-')+' to '+(pr.plan_end_date||'-')+'</td></tr>';
+    html += '<tr><td style="color:#666"><b>Plan Name</b></td><td><b>'+(pr.plan_name||'-')+'</b></td></tr>';
+    html += '</table></div></div>';
+    html += '<div style="margin-top:12px;border-top:1px solid #e0e0e0;padding-top:12px">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+    html += '<div style="font-weight:bold;color:#0d47a1;font-size:13px">Coverages on File ('+allCov.length+')</div>';
+    html += '<div style="font-size:11px;color:#888">Click Set Primary / Set Secondary to reassign</div>';
+    html += '</div>';
+    html += '<div id="eligAllCoverages">'+renderEligCoverages(allCov, ins.id, p.patient_id)+'</div>';
+    html += '</div>';
+    html += '<div style="margin-top:12px;border-top:1px solid #e0e0e0;padding-top:12px">';
+    html += '<div style="font-weight:bold;color:#0d47a1;font-size:13px;margin-bottom:8px">Forms & Documents</div>';
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap">';
+    html += '<button class="btn btn-sm btn-info" onclick="eligUploadPOTF(\''+p.patient_id+'\','+ins.id+')">&#128196; Upload POTF (Proof of Treatment)</button>';
+    html += '<button class="btn btn-sm btn-info" onclick="eligUploadROI(\''+p.patient_id+'\','+ins.id+')">&#128196; Upload ROI (Release of Information)</button>';
+    html += '</div></div>';
+    html += '<div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #e0e0e0">';
+    html += '<button class="btn btn-success" onclick="chgAutoLoadFromElig(\''+p.patient_id+'\')">&#9654; Load Patient for Charge Entry</button>';
+    html += '<button class="btn btn-secondary" onclick="document.getElementById(\'eligMemberResult\').innerHTML=\'\'">Close</button>';
+    html += '</div>';
+    html += '</div></div>';
+    document.getElementById('eligMemberResult').innerHTML = html;
   } catch(e) {
-    document.getElementById('eligMemberResult').innerHTML = '<div style="background:#ffebee;border:2px solid #f44336;border-radius:8px;padding:12px"><b>Error verifying: '+e.message+'</b></div>';
+    document.getElementById('eligMemberResult').innerHTML = '<div style="background:#ffebee;border:2px solid #f44336;border-radius:8px;padding:12px"><b>Error: '+e.message+'</b></div>';
   }
+}
+
+function renderEligCoverages(allCov, verifiedInsId, patientId) {
+  var today = new Date().toISOString().slice(0,10);
+  var html = '<table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr style="background:#0d47a1;color:white">';
+  html += '<th style="padding:7px 8px;text-align:left">Type</th><th style="padding:7px 8px;text-align:left">Payer</th><th style="padding:7px 8px;text-align:left">Member ID</th><th style="padding:7px 8px;text-align:left">Plan</th><th style="padding:7px 8px;text-align:left">Copay</th><th style="padding:7px 8px;text-align:left">Deductible</th><th style="padding:7px 8px;text-align:left">Plan Dates</th><th style="padding:7px 8px;text-align:left">Status</th><th style="padding:7px 8px;text-align:left">Verified</th><th style="padding:7px 8px;text-align:left">Actions</th></tr></thead><tbody>';
+  allCov.forEach(function(c) {
+    var isExpired = (c.termination_date||'') < today && c.termination_date;
+    var rowBg = isExpired ? '#fff8f8' : (c.id===verifiedInsId ? '#e8f5e9' : 'white');
+    var typeBg = c.insurance_type==='primary'?'#0d47a1':'#6a1b9a';
+    html += '<tr style="background:'+rowBg+';border-bottom:1px solid #eee">';
+    html += '<td style="padding:6px 8px"><span style="background:'+typeBg+';color:white;padding:2px 8px;border-radius:4px;font-weight:bold;font-size:10px">'+c.insurance_type.toUpperCase()+'</span></td>';
+    html += '<td style="padding:6px 8px"><b>'+c.payer_name+'</b><br><span style="color:#888;font-size:10px">'+(c.plan_type||'')+'</span></td>';
+    html += '<td style="padding:6px 8px">'+(c.member_id||'-')+'</td>';
+    html += '<td style="padding:6px 8px">'+(c.plan_type||'-')+'</td>';
+    html += '<td style="padding:6px 8px">$'+(c.copay||0)+'</td>';
+    html += '<td style="padding:6px 8px">$'+(c.deductible||0)+'</td>';
+    html += '<td style="padding:6px 8px;font-size:11px">'+(c.effective_date||'-')+'<br>to '+(c.termination_date||'-')+'</td>';
+    html += '<td style="padding:6px 8px"><span style="background:'+(isExpired?'#ffebee':'#e8f5e9')+';color:'+(isExpired?'#c62828':'#2e7d32')+';padding:2px 8px;border-radius:4px;font-weight:bold;font-size:10px">'+(isExpired?'EXPIRED':'ACTIVE')+'</span></td>';
+    html += '<td style="padding:6px 8px">'+(c.id===verifiedInsId?'<span style="color:#2e7d32;font-weight:bold;font-size:11px">&#10003; Verified</span>':'<span style="color:#999;font-size:11px">&mdash;</span>')+'</td>';
+    html += '<td style="padding:6px 8px;white-space:nowrap">';
+    if (!isExpired && c.insurance_type!=='primary') html += '<button class="btn btn-sm btn-success" onclick="eligUpdateType('+c.id+',\'primary\',\''+patientId+'\')">Set Primary</button> ';
+    if (!isExpired && c.insurance_type!=='secondary') html += '<button class="btn btn-sm btn-info" onclick="eligUpdateType('+c.id+',\'secondary\',\''+patientId+'\')">Set Secondary</button>';
+    if (isExpired) html += '<span style="color:#c62828;font-size:11px;font-weight:bold">Expired</span>';
+    html += '</td></tr>';
+  });
+  html += '</tbody></table>';
+  return html;
+}
+
+async function eligUpdateType(insId, newType, patientId) {
+  try {
+    var res = await fetch(API + '/api/eligibility/update-type', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({insurance_id:insId,insurance_type:newType}) });
+    var result = await res.json();
+    showToast('Insurance updated to '+newType.toUpperCase());
+    var memberId = document.getElementById('eligMemberId').value.trim();
+    if (memberId) verifyEligByMember();
+    if (patientId) { document.getElementById('chgSearchQ').value = patientId; chgSearchPatient(); }
+  } catch(e) { showToast('Error: '+e.message, 'error'); }
+}
+
+function eligUploadPOTF(patientId, insId) {
+  var html = '<div style="padding:20px"><h3 style="margin-bottom:4px">&#128196; Proof of Treatment Form (POTF)</h3>';
+  html += '<p style="color:#666;margin-bottom:12px">Patient: <b>'+patientId+'</b> | Insurance ID: <b>'+insId+'</b></p>';
+  html += '<div style="background:#f5f5f5;border:1px dashed #ccc;border-radius:8px;padding:20px;text-align:center">';
+  html += '<input type="file" id="potfFile" accept=".pdf,.jpg,.png,.doc,.docx" style="margin:8px 0">';
+  html += '<div style="font-size:11px;color:#888">Supported: PDF, JPG, PNG, DOC, DOCX</div>';
+  html += '</div>';
+  html += '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">';
+  html += '<button class="btn btn-success" onclick="eligSaveForm(\'potf\',\''+patientId+'\','+insId+')">Upload</button>';
+  html += '<button class="btn btn-secondary" onclick="this.closest(\'.elig-form-modal\').remove()">Cancel</button>';
+  html += '</div></div>';
+  eligShowFormModal(html);
+}
+
+function eligUploadROI(patientId, insId) {
+  var html = '<div style="padding:20px"><h3 style="margin-bottom:4px">&#128196; Release of Information (ROI)</h3>';
+  html += '<p style="color:#666;margin-bottom:12px">Patient: <b>'+patientId+'</b> | Insurance ID: <b>'+insId+'</b></p>';
+  html += '<div style="background:#f5f5f5;border:1px dashed #ccc;border-radius:8px;padding:20px;text-align:center">';
+  html += '<input type="file" id="roiFile" accept=".pdf,.jpg,.png,.doc,.docx" style="margin:8px 0">';
+  html += '<div style="font-size:11px;color:#888">Supported: PDF, JPG, PNG, DOC, DOCX</div>';
+  html += '</div>';
+  html += '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">';
+  html += '<button class="btn btn-success" onclick="eligSaveForm(\'roi\',\''+patientId+'\','+insId+')">Upload</button>';
+  html += '<button class="btn btn-secondary" onclick="this.closest(\'.elig-form-modal\').remove()">Cancel</button>';
+  html += '</div></div>';
+  eligShowFormModal(html);
+}
+
+function eligSaveForm(type, patientId, insId) {
+  var fileInput = document.getElementById(type+'File');
+  if (!fileInput || !fileInput.files.length) { showToast('Select a file first','error'); return; }
+  showToast(type.toUpperCase()+' uploaded successfully for '+patientId);
+  var modal = document.querySelector('.elig-form-modal');
+  if (modal) modal.remove();
+}
+
+function eligShowFormModal(innerHtml) {
+  var overlay = document.createElement('div');
+  overlay.className = 'elig-form-modal';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
+  overlay.innerHTML = '<div style="background:white;border-radius:12px;max-width:500px;width:100%;position:relative">'+innerHtml+'</div>';
+  document.body.appendChild(overlay);
 }
 
 function chgAutoLoadFromElig(patientId) {
@@ -4127,6 +4261,7 @@ function chgAutoLoadFromElig(patientId) {
   setTimeout(function(){ document.getElementById('eligMemberResult').innerHTML = ''; }, 3000);
 }
 
+function showP360Tab(
 function showP360Tab(tab, el) {
   document.querySelectorAll('#page-patient360 .tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('#page-patient360 .tab-content').forEach(t => t.classList.remove('active'));
@@ -5166,7 +5301,7 @@ async function payerLoadAll() {
     html += '</td></tr>';
   });
   html += '</tbody></table></div>';
-  html += '<div style="font-size:10px;color:#888;margin-top:3px">Showing ' + rows.length + ' record(s) — ELIG = Eligibility Record | CARD = Insurance Card (no eligibility). Click Member ID to copy.</div>';
+  html += '<div style="font-size:10px;color:#888;margin-top:3px">Showing ' + rows.length + ' record(s) â€” ELIG = Eligibility Record | CARD = Insurance Card (no eligibility). Click Member ID to copy.</div>';
   document.getElementById('payerAllGrid').innerHTML = html;
 }
 
@@ -5449,7 +5584,7 @@ async function mtCopyTemplate() {
   const dst = prompt('New template name?');
   if (!dst) return;
   await fetch(API + '/api/eligibility/templates/copy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source_template: src, new_template_name: dst }) });
-  showToast('Template copied: ' + src + ' → ' + dst);
+  showToast('Template copied: ' + src + ' â†’ ' + dst);
   document.getElementById('mtName').value = dst;
   mtLoadTemplate();
 }
@@ -5744,12 +5879,12 @@ const ART_CONTENT = {
       { title: 'Insured / Policy Holder / Subscriber', content: '<h3>Insured - Key Billing Terms</h3><div style="background:#ede7f6;border-left:4px solid #6a1b9a;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0"><b>Insured</b> is a person or legal entity whose financial losses are covered by the insurance policy.</div><h4>Also Known As (Interchangeable Terms):</h4><table style="font-size:11px"><tr><th>Term</th><th>When Used</th></tr><tr><td><b>Policy Holder</b></td><td>Person who owns the insurance policy</td></tr><tr><td><b>Member</b></td><td>Person enrolled in the insurance plan</td></tr><tr><td><b>Subscriber</b></td><td>Person who subscribes to (pays for) the insurance</td></tr><tr><td><b>Insured</b></td><td>Person whose losses are covered</td></tr><tr><td><b>Patient</b></td><td>When the insured is receiving treatment</td></tr><tr><td><b>Beneficiary</b></td><td>When the insured owns the policy and designates beneficiaries</td></tr></table><h4>Insured vs Patient - Key Difference:</h4><ul><li><b>Insured = Subscriber</b> (the person who holds the insurance policy)</li><li><b>Patient</b> = The person receiving treatment (may or may not be the insured)</li><li>Example: Wife (insured) covers Husband (patient) under her plan</li><li>Example: Parent (insured) covers Child (patient) under family plan</li></ul><h4>Insurance Card Information to Capture:</h4><ul><li><b>Subscriber Name:</b> Name on the insurance card</li><li><b>Member ID:</b> Unique identifier on card</li><li><b>Group Number:</b> Employer/group plan identifier</li><li><b>Payer Name:</b> Insurance company name</li><li><b>Plan Name:</b> Specific plan type (PPO, HMO, etc.)</li><li><b>Copay/Deductible:</b> Shown on card or benefits page</li></ul><h4>In PMS:</h4><p>When creating insurance on the Patient page, enter Subscriber Name (from insurance card), Member ID, Group #, and relationship to patient. System tracks primary/secondary/tertiary insurance order.</p>' },
       { title: 'Dependent - Family Coverage', content: '<h3>Dependent</h3><div style="background:#e0f7fa;border-left:4px solid #00838f;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0"><b>Dependent</b> - Insured person or card holder responsible for family member. He is also called as <b>"Owner"</b>.<br>Dependents are like <b>Spouse, Child, and some other persons</b>.</div><h4>Who is a Dependent?</h4><ul><li><b>Spouse:</b> Husband or Wife covered under subscriber\'s plan</li><li><b>Child:</b> Son or daughter (under age 26 for most plans)</li><li><b>Other:</b> Dependent parent, domestic partner (varies by plan)</li></ul><h4>Subscriber vs Dependent:</h4><table style="font-size:11px"><tr><th>Role</th><th>Description</th><th>Has Own Insurance?</th></tr><tr><td><b>Subscriber (Owner)</b></td><td>Holds the insurance policy, pays premiums</td><td>Yes - primary policy</td></tr><tr><td><b>Dependent</b></td><td>Covered under subscriber\'s plan</td><td>May have own secondary insurance</td></tr></table><h4>Dependent Billing Considerations:</h4><ul><li>Check if dependent has their own insurance (dual coverage)</li><li>COB rules apply when dependent has secondary insurance</li><li>Subscriber info is required on dependent claims</li><li>Dependent age limits: Most plans cover children until age 26</li><li>Medicare: Dependent coverage ends when child turns 26</li></ul><h4>In PMS:</h4><p>Go to <b>Patient 360 > Dependents tab</b> to add/view dependents. Each dependent has their own Member ID linked to subscriber.</p>' },
       { title: 'Address Verification', content: '<h3>Address - Verification Process</h3><div style="background:#fff8e1;border-left:4px solid #f9a825;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0"><b>For address, always look up in Patient Driving Licence.</b><br>If address is not correct, verify in <b>Waystar</b> or <b>HDB (Hospital Data Base)</b>.</div><h4>Address Verification Sources (In Order):</h4><ol><li><b>Patient Driving Licence</b> - Primary source for address verification</li><li><b>Waystar</b> - Electronic claims clearinghouse patient lookup</li><li><b>HDB (Hospital Data Base)</b> - Hospital internal patient database</li><li><b>Insurance Card/Portal</b> - Payer member portal</li></ol><h4>Why Address Matters in Billing:</h4><ul><li>Claims must have correct patient address</li><li>Some state Medicaid plans require in-state address</li><li>Address affects COBRA eligibility</li><li>Wrong address = returned mail = delayed payments</li></ul><h4>Address Components to Verify:</h4><table style="font-size:11px"><tr><th>Field</th><th>What to Check</th></tr><tr><td><b>Street Address</b></td><td>Exact match with driving licence</td></tr><tr><td><b>City</b></td><td>Correct city spelling</td></tr><tr><td><b>State</b></td><td>Two-letter abbreviation (NY, CA, TX)</td></tr><tr><td><b>ZIP Code</b></td><td>5-digit or ZIP+4 format</td></tr><tr><td><b>Phone</b></td><td>Current working number</td></tr></table>' },
-      { title: 'Insurance Modes - Primary to Quaternary', content: '<h3>Insurance Modes</h3><div style="background:#e8eaf6;border-left:4px solid #283593;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0">In US Healthcare, a patient can have multiple insurance coverages. The order determines which insurance pays first.</div><h4>Insurance Order (COB):</h4><table style="font-size:11px"><tr><th>Order</th><th>Type</th><th>Description</th><th>Pays First?</th></tr><tr><td style="background:#c8e6c9;font-weight:bold">1</td><td><b>Primary Insurance</b></td><td>First payer - pays based on benefit schedule</td><td>Yes - First</td></tr><tr><td style="background:#e3f2fd;font-weight:bold">2</td><td><b>Secondary Insurance</b></td><td>Pays remaining balance after primary</td><td>After Primary</td></tr><tr><td style="background:#fff3e0;font-weight:bold">3</td><td><b>Tertiary Insurance</b></td><td>Pays remaining after primary + secondary</td><td>After Secondary</td></tr><tr><td style="background:#f3e5f5;font-weight:bold">4</td><td><b>Quaternary Insurance</b></td><td>Last payer - rare, for very complex coverage</td><td>After Tertiary</td></tr></table><h4>COB Order Rules:</h4><ul><li><b>Birthday Rule:</b> For dependents - parent whose birthday comes first in the year is primary</li><li><b>Employment Rule:</b> Subscriber\'s own employer plan is primary for them</li><li><b>COBRA:</b> Usually secondary to active employment coverage</li><li><b>Medicare + Other:</b> Medicare is usually primary unless working-age with employer plan</li></ul><h4>Example:</h4><ul><li>Patient has BCBS (primary), Aetna (secondary), Medicare (tertiary)</li><li>BCBS pays first → Aetna pays remaining → Medicare pays any leftover</li></ul>' },
+      { title: 'Insurance Modes - Primary to Quaternary', content: '<h3>Insurance Modes</h3><div style="background:#e8eaf6;border-left:4px solid #283593;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0">In US Healthcare, a patient can have multiple insurance coverages. The order determines which insurance pays first.</div><h4>Insurance Order (COB):</h4><table style="font-size:11px"><tr><th>Order</th><th>Type</th><th>Description</th><th>Pays First?</th></tr><tr><td style="background:#c8e6c9;font-weight:bold">1</td><td><b>Primary Insurance</b></td><td>First payer - pays based on benefit schedule</td><td>Yes - First</td></tr><tr><td style="background:#e3f2fd;font-weight:bold">2</td><td><b>Secondary Insurance</b></td><td>Pays remaining balance after primary</td><td>After Primary</td></tr><tr><td style="background:#fff3e0;font-weight:bold">3</td><td><b>Tertiary Insurance</b></td><td>Pays remaining after primary + secondary</td><td>After Secondary</td></tr><tr><td style="background:#f3e5f5;font-weight:bold">4</td><td><b>Quaternary Insurance</b></td><td>Last payer - rare, for very complex coverage</td><td>After Tertiary</td></tr></table><h4>COB Order Rules:</h4><ul><li><b>Birthday Rule:</b> For dependents - parent whose birthday comes first in the year is primary</li><li><b>Employment Rule:</b> Subscriber\'s own employer plan is primary for them</li><li><b>COBRA:</b> Usually secondary to active employment coverage</li><li><b>Medicare + Other:</b> Medicare is usually primary unless working-age with employer plan</li></ul><h4>Example:</h4><ul><li>Patient has BCBS (primary), Aetna (secondary), Medicare (tertiary)</li><li>BCBS pays first â†’ Aetna pays remaining â†’ Medicare pays any leftover</li></ul>' },
       { title: 'Payer - Insurance Company', content: '<h3>Payer</h3><div style="background:#fce4ec;border-left:4px solid #c62828;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0"><b>Payer</b> is an insurance company. Also called as <b>"Insurer"</b>.<br>It takes care of financial services of the patient.</div><h4>Major Payers in US Healthcare:</h4><table style="font-size:11px"><tr><th>Payer</th><th>Type</th><th>ID Format</th></tr><tr><td><b>BCBS</b></td><td>Commercial</td><td>Starts with 3 alpha + number</td></tr><tr><td><b>Aetna</b></td><td>Commercial</td><td>W + number</td></tr><tr><td><b>Cigna</b></td><td>Commercial</td><td>Starts with "U"</td></tr><tr><td><b>UnitedHealthcare</b></td><td>Commercial</td><td>Varies by plan</td></tr><tr><td><b>Medicare</b></td><td>Government</td><td>Alpha + number (10 digits)</td></tr><tr><td><b>Medicaid</b></td><td>State Govt</td><td>Varies by state</td></tr><tr><td><b>Tricare</b></td><td>Military</td><td>Varies by plan</td></tr><tr><td><b>Workers Comp</b></td><td>Employer</td><td>Claim# based</td></tr><tr><td><b>Auto Insurance</b></td><td>Auto</td><td>Policy# based</td></tr></table><h4>Payer vs Provider vs Patient:</h4><ul><li><b>Payer:</b> Insurance company (BCBS, Aetna, Medicare)</li><li><b>Provider:</b> Hospital, clinic, doctor</li><li><b>Patient:</b> Person receiving treatment</li></ul>' },
       { title: 'Medicare - Federal Government Program', content: '<h3>Medicare</h3><div style="background:#e8f5e9;border-left:4px solid #2e7d32;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0"><b>Medicare</b> is a <b>Federal Government Program</b> providing health insurance for eligible individuals.</div><h4>Medicare Eligibility:</h4><table style="font-size:11px"><tr><th>Criteria</th><th>Requirement</th></tr><tr><td><b>Age</b></td><td>65 years or above</td></tr><tr><td><b>Citizenship</b></td><td>US Citizen</td></tr><tr><td><b>Special Cases</b></td><td>Long-term diseases (under 65 - ESRD, ALS)</td></tr></table><h4>4 Types of Medicare Plans:</h4><table style="font-size:11px"><tr><th>Part</th><th>Coverage</th><th>Type</th><th>Description</th></tr><tr><td style="background:#c8e6c9;font-weight:bold">Part A</td><td><b>Inpatient Only</b></td><td>Hospital</td><td>Hospital stays, skilled nursing, hospice</td></tr><tr><td style="background:#e3f2fd;font-weight:bold">Part B</td><td><b>Outpatient Only</b></td><td>Medical</td><td>Doctor visits, outpatient services, preventive care</td></tr><tr><td style="background:#fff3e0;font-weight:bold">Part C</td><td><b>Part A + Part B</b></td><td>HMO Plans</td><td>Medicare Advantage - combines A & B through private insurer</td></tr><tr><td style="background:#f3e5f5;font-weight:bold">Part D</td><td><b>Drug Coverage</b></td><td>Prescription</td><td>Prescription drug coverage (standalone or with Part C)</td></tr></table><h4>Medicare Billing Tips:</h4><ul><li>Medicare Secondary Payer (MSP) rules apply for working patients</li><li>Always verify Medicare eligibility before service</li><li>Part A = facility charges only; Part B = professional charges only</li><li>Medicare Advantage (Part C) may have different networks</li><li>ABN required when Medicare may not cover a service</li></ul>' },
       { title: 'Railroad Medicare', content: '<h3>Railroad Medicare</h3><div style="background:#efebe9;border-left:4px solid #5d4037;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0"><b>Railroad Medicare</b> - Transport department provides this insurance for railroad workers.</div><h4>What is Railroad Medicare?</h4><ul><li>Special Medicare program for <b>railroad workers and retirees</b></li><li>Administered by the <b>US Railroad Retirement Board (RRB)</b></li><li>Covers railroad workers and their families</li><li>Works alongside regular Medicare</li></ul><h4>Railroad Retirement Board (RRB):</h4><ul><li>Administers insurance and retirement benefits for all railroad workers</li><li>If you or a loved one is retiring from the RRB, benefits work with Medicare</li><li>Railroad Medicare replaces regular Medicare for railroad workers</li></ul><h4>Key Differences from Regular Medicare:</h4><table style="font-size:11px"><tr><th>Feature</th><th>Regular Medicare</th><th>Railroad Medicare</th></tr><tr><td>Administration</td><td>CMS (Centers for Medicare)</td><td>RRB (Railroad Retirement Board)</td></tr><tr><td>Eligibility</td><td>65+ or disabled</td><td>Railroad workers/retirees</td></tr><tr><td>Claims Processing</td><td>MAC contractors</td><td>Palmetto GBA (Railroad MAC)</td></tr><tr><td>Coverage</td><td>Parts A, B, C, D</td><td>Parts A, B (same benefits)</td></tr></table><h4>Billing Railroad Medicare:</h4><ul><li>Use Railroad Medicare ID (different from regular Medicare MBI)</li><li>File claims to Palmetto GBA Railroad MAC</li><li>Same CPT/ICD coding rules apply</li><li>ABN process is the same</li></ul>' },
       { title: 'Medicare Supplementary Plan & Medicaid', content: '<h3>Medicare Supplementary Plan</h3><div style="background:#e8eaf6;border-left:4px solid #1a237e;padding:10px;margin-bottom:8px;border-radius:0 6px 6px 0"><b>Medicare Supplement (Medigap)</b> - Private insurance that covers gaps in Original Medicare (deductibles, copays, coinsurance).</div><hr style="margin:12px 0"><h3>Medicaid</h3><div style="background:#e0f2f1;border-left:4px solid #00695c;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0"><b>Medicaid</b> is a <b>State Government Program</b> providing health coverage for low-income individuals.</div><h4>Medicaid Eligibility:</h4><table style="font-size:11px"><tr><th>Criteria</th><th>Requirement</th></tr><tr><td><b>Age</b></td><td>Below 65 years</td></tr><tr><td><b>Income</b></td><td>Below poverty line (Low income people)</td></tr><tr><td><b>Citizenship</b></td><td>US Citizens (or qualified immigrants)</td></tr><tr><td><b>State</b></td><td>Varies by state - each state has own Medicaid rules</td></tr></table><h4>Medicare vs Medicaid:</h4><table style="font-size:11px"><tr><th>Feature</th><th>Medicare</th><th>Medicaid</th></tr><tr><td>Government Level</td><td><b>Federal</b></td><td><b>State</b></td></tr><tr><td>Eligibility</td><td>65+ or disabled</td><td>Low income, below poverty line</td></tr><tr><td>Cost</td><td>Premiums may apply</td><td>Free or very low cost</td></tr><tr><td>Coverage</td><td>Standardized nationally</td><td>Varies by state</td></tr></table>' },
-      { title: 'Medicaid Spenddown', content: '<h3>Medicaid Spenddown</h3><div style="background:#fff3e0;border-left:4px solid #e65100;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0"><b>Spenddown</b> is a way for someone with Medicare to qualify for Medicaid, even if their income is higher than the state\'s Medicaid limit.</div><h4>What is Spenddown?</h4><ul><li>Allows high-income patients to "spend down" excess income on medical bills</li><li>After spending down, patient qualifies for Medicaid coverage</li><li>Acts like a "deductible" for Medicaid eligibility</li></ul><h4>How to Check Spenddown in PMS:</h4><ol><li>Go to <b>Eligibility</b> page</li><li>Select <b>Payer as Medicaid</b></li><li>Enter search criteria (patient info)</li><li>Click <b>Submit</b></li><li>If insurance is active, press <b>Ctrl+F</b> and search for <b>"spenddown"</b></li><li>It shows under <b>HMO Benefit Coverage</b> section</li></ol><h4>Spenddown Amounts:</h4><table style="font-size:11px"><tr><th>Type</th><th>Description</th></tr><tr><td><b>Monthly Spenddown</b></td><td>Patient must spend this amount each month on medical bills</td></tr><tr><td><b>Quarterly Spenddown</b></td><td>Amount calculated every 3 months</li></tr><tr><td><b>Anticipated Spenddown</b></td><td>Projected amount for upcoming medical needs</td></tr></table><h4>Billing with Spenddown:</h4><ul><li>Bill primary insurance first (Medicare or other)</li><li>Remaining patient responsibility goes toward spenddown</li><li>Once spenddown is met → Medicaid becomes active</li><li>Track spenddown status regularly</li></ul>' },
+      { title: 'Medicaid Spenddown', content: '<h3>Medicaid Spenddown</h3><div style="background:#fff3e0;border-left:4px solid #e65100;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0"><b>Spenddown</b> is a way for someone with Medicare to qualify for Medicaid, even if their income is higher than the state\'s Medicaid limit.</div><h4>What is Spenddown?</h4><ul><li>Allows high-income patients to "spend down" excess income on medical bills</li><li>After spending down, patient qualifies for Medicaid coverage</li><li>Acts like a "deductible" for Medicaid eligibility</li></ul><h4>How to Check Spenddown in PMS:</h4><ol><li>Go to <b>Eligibility</b> page</li><li>Select <b>Payer as Medicaid</b></li><li>Enter search criteria (patient info)</li><li>Click <b>Submit</b></li><li>If insurance is active, press <b>Ctrl+F</b> and search for <b>"spenddown"</b></li><li>It shows under <b>HMO Benefit Coverage</b> section</li></ol><h4>Spenddown Amounts:</h4><table style="font-size:11px"><tr><th>Type</th><th>Description</th></tr><tr><td><b>Monthly Spenddown</b></td><td>Patient must spend this amount each month on medical bills</td></tr><tr><td><b>Quarterly Spenddown</b></td><td>Amount calculated every 3 months</li></tr><tr><td><b>Anticipated Spenddown</b></td><td>Projected amount for upcoming medical needs</td></tr></table><h4>Billing with Spenddown:</h4><ul><li>Bill primary insurance first (Medicare or other)</li><li>Remaining patient responsibility goes toward spenddown</li><li>Once spenddown is met â†’ Medicaid becomes active</li><li>Track spenddown status regularly</li></ul>' },
       { title: 'TRICARE & CHAMPVA', content: '<h3>TRICARE</h3><div style="background:#e3f2fd;border-left:4px solid #0d47a1;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0"><b>TRICARE</b> is the health care program for <b>uniformed service members, retirees, and their families</b> around the world.</div><h4>TRICARE Plans:</h4><table style="font-size:11px"><tr><th>Plan</th><th>Who</th><th>Network</th></tr><tr><td><b>TRICARE Prime</b></td><td>Active duty & families</td><td>In-network only (like HMO)</td></tr><tr><td><b>TRICARE Select</b></td><td>Active duty & retirees</td><td>In & Out of network</td></tr><tr><td><b>TRICARE For Life</b></td><td>Retirees 65+</td><td>Medicare + TRICARE supplement</td></tr><tr><td><b>TRICARE Reserve Select</b></td><td>Reserve/National Guard</td><td>In & Out of network</td></tr><tr><td><b>TRICARE Young Adult</b></td><td>Children up to age 23</td><td>Varies by plan</td></tr></table><hr style="margin:15px 0"><h3>CHAMPVA</h3><div style="background:#f3e5f5;border-left:4px solid #6a1b9a;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0"><b>CHAMPVA</b> - The Civilian Health and Medical Program of the Department of Veterans Affairs (VA) shares the cost of certain health care services and supplies with eligible beneficiaries.</div><h4>CHAMPVA Eligibility:</h4><ul><li>Spouse or widow/widower of a <b>veteran with permanent disability</b></li><li>Children of veterans who are permanently disabled or deceased</li><li>Veteran must have been rated permanently and totally disabled</li></ul><h4>CHAMPVA vs TRICARE:</h4><table style="font-size:11px"><tr><th>Feature</th><th>CHAMPVA</th><th>TRICARE</th></tr><tr><td>For</td><td>Veteran dependents (civilian)</td><td>Active/retired military</td></tr><tr><td>Admin</td><td>VA (Veterans Affairs)</td><td>DoD (Dept of Defense)</td></tr><tr><td>Network</td><td>Any provider accepting Medicare</td><td>Varies by plan</td></tr></table>' },
       { title: 'Veteran & COBRA', content: '<h3>Veteran</h3><div style="background:#e8eaf6;border-left:4px solid #1a237e;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0"><b>Veteran</b> - A person who served in the active military, naval, or air service, and who was discharged or released therefrom under conditions other than dishonorable.</div><h4>Veteran Healthcare Coverage:</h4><ul><li><b>VA Health Care:</b> Government-provided care at VA hospitals</li><li><b>TRICARE:</b> If still active or recently retired</li><li><b>CHAMPVA:</b> For veteran\'s dependents</li><li><b>Medicare:</b> If veteran is 65+</li></ul><hr style="margin:15px 0"><h3>COBRA</h3><div style="background:#fff8e1;border-left:4px solid #f9a825;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0"><b>COBRA</b> - Consolidated Omnibus Budget Reconciliation Act. It is related to the health insurance program that brings certain privileges for employees, so that they can continue benefits of their health insurance after losing jobs or/and at time of reduction in their work hours.</div><h4>COBRA Key Points:</h4><table style="font-size:11px"><tr><th>Feature</th><th>Details</th></tr><tr><td><b>Duration</b></td><td>18-36 months (varies by event)</td></tr><tr><td><b>Eligibility</b></td><td>Job loss, reduced hours, life events</td></tr><tr><td><b>Cost</b></td><td>Employee pays full premium + 2% admin fee</td></tr><tr><td><b>Coverage</b></td><td>Same as active employee coverage</td></tr><tr><td><b>Election Period</b></td><td>60 days from qualifying event</td></tr></table><h4>COBRA Billing Notes:</h4><ul><li>COBRA patients have same coverage as when employed</li><li>Verify COBRA is active before providing service</li><li>COBRA is usually secondary to other insurance</li><li>COBRA terminates if patient gets new employer coverage</li></ul>' },
       { title: 'Auto Insurance & Workers Compensation', content: '<h3>Auto Insurance</h3><div style="background:#e0f7fa;border-left:4px solid #00838f;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0"><b>Auto Insurance</b> - Accident insurance covering medical payments or Personal Injury Protection (PIP).<br>Need to fill <b>DOI (Date of Injury)</b> and <b>State</b> as per Progress Notes.</div><h4>Auto Insurance Examples:</h4><ul><li>AAA Insurance</li><li>Sedgwick Insurance</li><li>Traveller Insurance</li></ul><h4>Auto Insurance Billing:</h4><ul><li>Accident date (DOI) is critical - must match progress notes</li><li>State of accident determines coverage rules</li><li>Auto insurance is primary for accident-related injuries</li><li>Health insurance may be secondary (Coordination of Benefits)</li><li>Claims need: accident report, police report, medical records</li></ul><hr style="margin:15px 0"><h3>Workers Compensation</h3><div style="background:#ffebee;border-left:4px solid #c62828;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0"><b>The Workmen Compensation Act, 1923</b> is an employee compensation act that makes it mandatory for employers to pay employees for any work-related injury or disability.</div><h4>Workers Comp Key Points:</h4><ul><li><b>Covers:</b> Work-related injuries and occupational diseases</li><li><b>Mandatory:</b> Employers must carry this insurance</li><li><b>Examples:</b> Sedgwick Insurance, Traveller Insurance</li><li><b>No Fault:</b> Employee doesn\'t need to prove employer negligence</li></ul><h4>Workers Comp Billing:</h4><ul><li>Must have employer name, employer insurance info</li><li>Claim# required for all workers comp claims</li><li>Injury must be work-related (document carefully)</li><li>Workers comp is ALWAYS primary for work injuries</li><li>Patient health insurance is secondary</li></ul>' },
@@ -5762,7 +5897,7 @@ const ART_CONTENT = {
       { title: 'Place of Service (POS) Codes', content: '<h3>Place of Service (POS) Codes</h3><div style="background:#e0f7fa;border-left:4px solid #00838f;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0"><b>POS</b> - Place of Service. It is nothing but <b>Departments in Hospital</b> where the service is provided.</div><h4>Common POS Codes:</h4><table style="font-size:11px"><tr><th>Code</th><th>Place of Service</th><th>Description</th></tr><tr><td style="background:#c8e6c9"><b>11</b></td><td>Office</td><td>Provider office/clinic (most common for outpatient)</td></tr><tr><td><b>12</b></td><td>Home</td><td>Patient home (home health visits)</td></tr><tr><td><b>21</b></td><td>Inpatient Hospital</td><td>Hospital inpatient (admitted)</td></tr><tr><td><b>22</b></td><td>Outpatient Hospital</td><td>Hospital outpatient department</td></tr><tr><td><b>23</b></td><td>Emergency Room</td><td>Hospital emergency department</td></tr><tr><td><b>24</b></td><td>Ambulatory Surgical Center</td><td>ASC (same-day surgery)</td></tr><tr><td><b>31</b></td><td>Skilled Nursing Facility</td><td>SNF (nursing home with skilled care)</td></tr><tr><td><b>32</b></td><td>Nursing Facility</td><td>Long-term care facility</td></tr><tr><td><b>51</b></td><td>Inpatient Psychiatric</td><td>Psychiatric hospital inpatient</td></tr><tr><td><b>52</b></td><td>Outpatient Psychiatric</td><td>Psychiatric clinic outpatient</td></tr><tr><td><b>71</b></td><td>Public Health Clinic</td><td>Community health center</td></tr><tr><td><b>72</b></td><td>Rural Health Clinic</td><td>Rural area clinic</td></tr><tr><td><b>81</b></td><td>Independent Laboratory</td><td>Lab not attached to hospital</td></tr><tr><td><b>99</b></td><td>Other</td><td>Unlisted location</td></tr></table><h4>POS Usage on Claims:</h4><ul><li>POS code goes in <b>Box 24B</b> on CMS-1500</li><li>Must match where service was actually performed</li><li>Different POS = different reimbursement rates</li></ul>' },
       { title: 'Date of Service (DOS)', content: '<h3>Date of Service (DOS)</h3><div style="background:#e8f5e9;border-left:4px solid #2e7d32;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0"><b>DOS</b> - Date of Service. It is the <b>treatment date</b>, when the patient had the procedure or service.</div><h4>Key DOS Rules:</h4><ul><li>DOS = date the service was <b>actually performed</b></li><li>Must match medical records/progress notes</li><li>Claims must be submitted within <b>timely filing limits</b> from DOS</li><li>DOS determines which plan is active (if coverage changed)</li></ul><h4>DOS and Timely Filing:</h4><table style="font-size:11px"><tr><th>Payer</th><th>Filing Limit</th></tr><tr><td><b>Medicare</b></td><td>1 year from DOS</td></tr><tr><td><b>Medicaid</b></td><td>90 days (varies by state)</td></tr><tr><td><b>Commercial</b></td><td>Varies (90 days to 1 year)</td></tr><tr><td><b>Workers Comp</b></td><td>Varies by state</td></tr></table><h4>DOS on Claims:</h4><ul><li>CMS-1500 Box 14: Date of service</li><li>For multiple services: From date (Box 14a) To date (Box 14b)</li><li>Each line item can have different DOS</li></ul>' },
       { title: 'Outpatient vs Inpatient', content: '<h3>Outpatient vs Inpatient</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0"><div style="background:#e8f5e9;border:2px solid #2e7d32;border-radius:8px;padding:12px"><h4 style="color:#2e7d32;margin-top:0">Outpatient</h4><div style="font-size:12px"><b>Patient staying in hospital below 24 hours</b> is called as outpatient.</div><ul style="font-size:11px"><li>Services from ER, lab, x-ray, surgery, observation</li><li>Without being admitted to hospital</li><li>POS: 11 (Office), 22 (Outpatient Hospital), 23 (ER)</li></ul></div><div style="background:#e3f2fd;border:2px solid #1565c0;border-radius:8px;padding:12px"><h4 style="color:#1565c0;margin-top:0">Inpatient</h4><div style="font-size:12px"><b>Patient admitted by a physician to the hospital for treatment.</b><br>Patient spent <b>more than 24 hours</b> is also known as "Inpatient".</div><ul style="font-size:11px"><li>Admitted to hospital by physician</li><li>Spends more than 24 hours</li><li>POS: 21 (Inpatient Hospital)</li></ul></div></div><h4>Key Differences:</h4><table style="font-size:11px"><tr><th>Feature</th><th>Outpatient</th><th>Inpatient</th></tr><tr><td><b>Duration</b></td><td>Less than 24 hours</td><td>More than 24 hours</td></tr><tr><td><b>Admission</b></td><td>No formal admission</td><td>Physician admits patient</td></tr><tr><td><b>POS Code</b></td><td>11, 22, 23, 24</td><td>21</td></tr><tr><td><b>Medicare Part</b></td><td>Part B</td><td>Part A</td></tr><tr><td><b>Billing</b></td><td>Professional + Facility</td><td>Facility (DRG-based)</td></tr></table>' },
-      { title: 'Patient Responsibilities - Copay, Coinsurance, Deductible, OOP', content: '<h3>Patient Responsibilities (PR)</h3><div style="background:#fff3e0;border-left:4px solid #e65100;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0"><b>Patient Responsibility (PR)</b> is the portion of medical costs that the patient must pay out of their own pocket.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0"><div style="background:#c8e6c9;border:2px solid #4caf50;border-radius:8px;padding:10px"><h4 style="color:#2e7d32;margin-top:0">&#128176; Copay (Co-payment)</h4><div style="font-size:11px"><b>Fixed dollar amount</b> paid by the patient on every visit to provider.<br>Like a consultation fee.</div><div style="background:white;border:1px solid #4caf50;border-radius:4px;padding:6px;margin-top:6px;font-size:11px"><b>Example:</b><br>&#8226; BP Patient visits doctor → Copay: <b>$20</b><br>&#8226; Sugar (Diabetes) Patient → Copay: <b>$25</b><br>&#8226; Specialist Visit → Copay: <b>$50</b><br><br><i>Pay fixed amount each visit regardless of total charges</i></div></div><div style="background:#e3f2fd;border:2px solid #1976d2;border-radius:8px;padding:10px"><h4 style="color:#1565c0;margin-top:0">% Coinsurance</h4><div style="font-size:11px"><b>Percentage of cost shared</b> between insurance and patient apart from deductible and copay.</div><div style="background:white;border:1px solid #1976d2;border-radius:4px;padding:6px;margin-top:6px;font-size:11px"><b>Example (80/20):</b><br>&#8226; Total bill: <b>$1,000</b><br>&#8226; Insurance pays: <b>80% = $800</b><br>&#8226; Patient pays: <b>20% = $200</b><br><br><i>Always a percentage, not a fixed amount</i></div></div><div style="background:#fff9c4;border:2px solid #f9a825;border-radius:8px;padding:10px"><h4 style="color:#f57f17;margin-top:0">$ Deductible</h4><div style="font-size:11px"><b>Fixed sum</b> subscriber must pay BEFORE insurance starts contributing.</div><div style="background:white;border:1px solid #f9a825;border-radius:4px;padding:6px;margin-top:6px;font-size:11px"><b>Example ($350 deductible):</b><br>&#8226; 1st visit: $120 → Patient pays <b>$120</b> (deductible remaining: $230)<br>&#8226; 2nd visit: $150 → Patient pays <b>$150</b> (deductible remaining: $80)<br>&#8226; 3rd visit: $200 → Patient pays <b>$80</b> + coinsurance on remaining $120<br><br><i>Once deductible is met, insurance starts paying</i></div></div><div style="background:#f3e5f5;border:2px solid #9c27b0;border-radius:8px;padding:10px"><h4 style="color:#6a1b9a;margin-top:0">OOP (Out of Pocket Max)</h4><div style="font-size:11px"><b>Maximum amount</b> patient pays for covered services per calendar year. After reaching OOP, insurance pays 100%.</div><div style="background:white;border:1px solid #9c27b0;border-radius:4px;padding:6px;margin-top:6px;font-size:11px"><b>Example ($5,000 OOP):</b><br>&#8226; Year total: Copay + Deductible + Coinsurance<br>&#8226; Once patient has paid <b>$5,000</b> total<br>&#8226; Insurance pays <b>100%</b> of covered services for rest of year<br><br><i>Safety net - protects patient from catastrophic costs</i></div></div></div><h4>Payment Flow Example ($1,000 Bill):</h4><div style="background:white;border:2px solid #333;border-radius:8px;padding:10px;font-size:11px"><table style="width:100%"><tr><td><b>1. Deductible</b></td><td>Patient pays first $250 (if not yet met)</td></tr><tr><td><b>2. Coinsurance</b></td><td>Patient pays 20% of remaining $750 = $150</td></tr><tr><td><b>3. Insurance Pays</b></td><td>80% of $750 = $600</td></tr><tr style="background:#e8f5e9"><td><b>Total Patient</b></td><td><b>$250 + $150 = $400</b></td></tr><tr style="background:#e3f2fd"><td><b>Total Insurance</b></td><td><b>$600</b></td></tr></table></div>' },
+      { title: 'Patient Responsibilities - Copay, Coinsurance, Deductible, OOP', content: '<h3>Patient Responsibilities (PR)</h3><div style="background:#fff3e0;border-left:4px solid #e65100;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0"><b>Patient Responsibility (PR)</b> is the portion of medical costs that the patient must pay out of their own pocket.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0"><div style="background:#c8e6c9;border:2px solid #4caf50;border-radius:8px;padding:10px"><h4 style="color:#2e7d32;margin-top:0">&#128176; Copay (Co-payment)</h4><div style="font-size:11px"><b>Fixed dollar amount</b> paid by the patient on every visit to provider.<br>Like a consultation fee.</div><div style="background:white;border:1px solid #4caf50;border-radius:4px;padding:6px;margin-top:6px;font-size:11px"><b>Example:</b><br>&#8226; BP Patient visits doctor â†’ Copay: <b>$20</b><br>&#8226; Sugar (Diabetes) Patient â†’ Copay: <b>$25</b><br>&#8226; Specialist Visit â†’ Copay: <b>$50</b><br><br><i>Pay fixed amount each visit regardless of total charges</i></div></div><div style="background:#e3f2fd;border:2px solid #1976d2;border-radius:8px;padding:10px"><h4 style="color:#1565c0;margin-top:0">% Coinsurance</h4><div style="font-size:11px"><b>Percentage of cost shared</b> between insurance and patient apart from deductible and copay.</div><div style="background:white;border:1px solid #1976d2;border-radius:4px;padding:6px;margin-top:6px;font-size:11px"><b>Example (80/20):</b><br>&#8226; Total bill: <b>$1,000</b><br>&#8226; Insurance pays: <b>80% = $800</b><br>&#8226; Patient pays: <b>20% = $200</b><br><br><i>Always a percentage, not a fixed amount</i></div></div><div style="background:#fff9c4;border:2px solid #f9a825;border-radius:8px;padding:10px"><h4 style="color:#f57f17;margin-top:0">$ Deductible</h4><div style="font-size:11px"><b>Fixed sum</b> subscriber must pay BEFORE insurance starts contributing.</div><div style="background:white;border:1px solid #f9a825;border-radius:4px;padding:6px;margin-top:6px;font-size:11px"><b>Example ($350 deductible):</b><br>&#8226; 1st visit: $120 â†’ Patient pays <b>$120</b> (deductible remaining: $230)<br>&#8226; 2nd visit: $150 â†’ Patient pays <b>$150</b> (deductible remaining: $80)<br>&#8226; 3rd visit: $200 â†’ Patient pays <b>$80</b> + coinsurance on remaining $120<br><br><i>Once deductible is met, insurance starts paying</i></div></div><div style="background:#f3e5f5;border:2px solid #9c27b0;border-radius:8px;padding:10px"><h4 style="color:#6a1b9a;margin-top:0">OOP (Out of Pocket Max)</h4><div style="font-size:11px"><b>Maximum amount</b> patient pays for covered services per calendar year. After reaching OOP, insurance pays 100%.</div><div style="background:white;border:1px solid #9c27b0;border-radius:4px;padding:6px;margin-top:6px;font-size:11px"><b>Example ($5,000 OOP):</b><br>&#8226; Year total: Copay + Deductible + Coinsurance<br>&#8226; Once patient has paid <b>$5,000</b> total<br>&#8226; Insurance pays <b>100%</b> of covered services for rest of year<br><br><i>Safety net - protects patient from catastrophic costs</i></div></div></div><h4>Payment Flow Example ($1,000 Bill):</h4><div style="background:white;border:2px solid #333;border-radius:8px;padding:10px;font-size:11px"><table style="width:100%"><tr><td><b>1. Deductible</b></td><td>Patient pays first $250 (if not yet met)</td></tr><tr><td><b>2. Coinsurance</b></td><td>Patient pays 20% of remaining $750 = $150</td></tr><tr><td><b>3. Insurance Pays</b></td><td>80% of $750 = $600</td></tr><tr style="background:#e8f5e9"><td><b>Total Patient</b></td><td><b>$250 + $150 = $400</b></td></tr><tr style="background:#e3f2fd"><td><b>Total Insurance</b></td><td><b>$600</b></td></tr></table></div>' },
       { title: 'CMS-1500 Claim Form', content: '<h3>CMS-1500 Claim Form</h3><div style="background:#e8eaf6;border-left:4px solid #1a237e;padding:10px;margin-bottom:12px;border-radius:0 6px 6px 0"><b>CMS-1500</b> is divided into 3 parts:<br>1. <b>Patient Data</b> &nbsp; 2. <b>Insurance Data</b> &nbsp; 3. <b>Supplier Data (Provider)</b><br><br>We have <b>33 blocks</b> in CMS-1500:</div><h4>CMS-1500 Block Layout:</h4><table style="font-size:11px"><tr><th>Blocks</th><th>Section</th><th>Content</th></tr><tr style="background:#e8f5e9"><td><b>1 - 19</b></td><td>Patient & Insurance</td><td>Payer, patient name, DOB, address, insurance info</td></tr><tr style="background:#e3f2fd"><td><b>20 - 33</b></td><td>Supplier & Medical</td><td>Services, CPT codes, charges, provider info, signature</td></tr></table><h4>Key Boxes Reference:</h4><table style="font-size:11px"><tr><th>Box</th><th>Content</th><th>Data Source</th></tr><tr><td><b>1</b></td><td>Payer Name</td><td>Insurance company</td></tr><tr><td><b>1a</b></td><td>Insured ID Number</td><td>Member ID from card</td></tr><tr><td><b>2</b></td><td>Patient Name</td><td>Last, First Middle</td></tr><tr><td><b>3</b></td><td>Patient DOB / Sex</td><td>Patient demographics</td></tr><tr><td><b>4</b></td><td>Insured Name</td><td>Subscriber name</td></tr><tr><td><b>5</b></td><td>Patient Address</td><td>Street, City, State, ZIP</td></tr><tr><td><b>6</b></td><td>Relationship</td><td>Self, Spouse, Child</td></tr><tr><td><b>11</b></td><td>Insured Group #</td><td>Employer group number</td></tr><tr><td><b>14</b></td><td>Date of Service</td><td>When service was provided</td></tr><tr><td><b>21</b></td><td>ICD Diagnosis</td><td>ICD-10 codes</td></tr><tr><td><b>24E</b></td><td>CPT/HCPCS</td><td>Procedure codes</td></tr><tr><td><b>24F</b></td><td>Modifiers</td><td>25, 59, etc.</td></tr><tr><td><b>24G</b></td><td>DX Pointer</td><td>Links CPT to ICD</td></tr><tr><td><b>25</b></td><td>Federal Tax ID</td><td>Provider EIN</td></tr><tr><td><b>28</b></td><td>Total Charge</td><td>Sum of all line items</td></tr><tr><td><b>31</b></td><td>Provider Signature</td><td>Rendering provider</td></tr><tr><td><b>33</b></td><td>Provider NPI & Info</td><td>NPI, address, phone</td></tr></table><h4>Reference Links:</h4><ul><li><b>CMS-1500 Instructions:</b> <a href="https://www.sfhp.org/wp-content/files/providers/forms/Instructions_for_CMS_1500_Claim_Form.pdf" target="_blank">CMS-1500 Form Instructions (PDF)</a></li></ul><h4>In PMS:</h4><ul><li>Generate CMS-1500 from <b>AR Calling > Corrected Claim > Print Updated CMS-1500</b></li><li>Generate from <b>Rejections > Generate CMS-1500</b></li><li>Auto-populates all 33 blocks from charge + patient + insurance data</li></ul>' }
     ]
   },
@@ -6520,7 +6655,7 @@ var ARQA_DATA = [
 
   {cat:'insurance',q:'What is Medicare and who is eligible?',a:'Medicare is a federal government health insurance program for people 65+, certain younger people with disabilities, and people with ESRD (End-Stage Renal Disease). It has 4 parts:\n\nPart A - Hospital Insurance (inpatient, skilled nursing, hospice)\nPart B - Medical Insurance (doctor visits, outpatient, preventive)\nPart C - Medicare Advantage (private plans combining A+B, sometimes D)\nPart D - Prescription Drug Coverage\n\nMedicare Beneficiary Identifier (MBI) format: 11 characters like 1EG4-TE5-MK72'},
   {cat:'insurance',q:'What is the difference between Medicare and Medicaid?',a:'Medicare = Federal program for 65+ or disabled (regardless of income)\nMedicaid = State program for low-income individuals (income-based)\n\nSome patients have BOTH (called "dual eligible"). When billing:\n- Medicare is usually primary\n- Medicaid is secondary\n- Bill Medicare first, then Medicaid for remaining balance\n- Always verify both before service'},
-  {cat:'insurance',q:'What are Medicare Parts A, B, C, D?',a:'Part A (Hospital): Covers inpatient hospital stays, skilled nursing facility, hospice, some home health care. Most people do not pay a premium if they worked 10+ years.\n\nPart B (Medical): Covers doctor visits, outpatient care, durable medical equipment, preventive services. Standard premium ~$174/month (2024).\n\nPart C (Advantage): Private insurance替代 Original Medicare. Often includes vision, dental, drug coverage. Must use plan network.\n\nPart D (Drugs): Prescription drug coverage. Can be standalone or included in Part C. Has coverage gap (donut hole).'},
+  {cat:'insurance',q:'What are Medicare Parts A, B, C, D?',a:'Part A (Hospital): Covers inpatient hospital stays, skilled nursing facility, hospice, some home health care. Most people do not pay a premium if they worked 10+ years.\n\nPart B (Medical): Covers doctor visits, outpatient care, durable medical equipment, preventive services. Standard premium ~$174/month (2024).\n\nPart C (Advantage): Private insuranceæ›¿ä»£ Original Medicare. Often includes vision, dental, drug coverage. Must use plan network.\n\nPart D (Drugs): Prescription drug coverage. Can be standalone or included in Part C. Has coverage gap (donut hole).'},
   {cat:'insurance',q:'What is Medicaid and who qualifies?',a:'Medicaid is a state government program providing health coverage for low-income individuals and families. Eligibility varies by state but generally:\n\n- Income below poverty line (138% FPL in expansion states)\n- Pregnant women, children, elderly, disabled\n- US citizens or qualified immigrants\n\nKey billing points:\n- Medicaid ID format varies by state (e.g., NY123456789)\n- Often pays lower than commercial insurance\n- May require prior authorization for many services\n- Spenddown: Some patients must "spend down" income on medical bills before Medicaid activates\n- Bill Medicaid LAST (after Medicare or commercial insurance)'},
   {cat:'insurance',q:'What is a Medicaid Spenddown?',a:'Spenddown allows patients with income above Medicaid limits to qualify by "spending" excess income on medical bills. Like a deductible for Medicaid eligibility.\n\nHow it works:\n1) Patient has monthly/quarterly spenddown amount (e.g., $500/month)\n2) Medical bills count toward spenddown\n3) Once spenddown is met, Medicaid becomes active\n4) Medicaid then pays future bills\n\nIn PMS: Check eligibility, search "spenddown" in benefits. Bills during spenddown period go to patient responsibility until amount is met.'},
   {cat:'insurance',q:'What is Medicare Secondary Payer (MSP)?',a:'MSP rules determine when Medicare pays SECOND instead of first. Medicare is secondary when:\n\n1) Patient has employer group health plan (active employee)\n2) Workers compensation claim\n3) Auto insurance (No-Fault)\n4) Veterans Affairs coverage\n5) TRICARE\n6) End-Stage Renal Disease (first 30 months with employer coverage)\n\nWhen Medicare is secondary:\n- Bill primary insurance first\n- Submit to Medicare with primary EOB/ERA\n- Medicare covers remaining allowed amount\n- Use MSP codes on claim when applicable'},
@@ -6529,7 +6664,7 @@ var ARQA_DATA = [
   {cat:'insurance',q:'What is Workers Compensation insurance?',a:'Workers Comp covers work-related injuries and occupational diseases. Key billing rules:\n\n- ALWAYS primary for work-related injuries\n- Patient health insurance is SECONDARY\n- Need: Employer name, employer insurance, claim#\n- Injury must be documented as work-related\n- No fault system (employee does not need to prove employer negligence)\n\nExamples: Sedgwick, Traveller Insurance\n\nBilling steps:\n1) Get employer and workers comp info\n2) Bill workers comp FIRST\n3) Bill health insurance for remaining balance\n4) Include claim# on all claims\n5) Do NOT bill patient for work-related injuries'},
   {cat:'insurance',q:'What is Auto Insurance in medical billing?',a:'Auto insurance covers medical payments from car accidents (PIP - Personal Injury Protection). Billing rules:\n\n- Primary for accident-related injuries\n- Need: Date of Injury (DOI), State of accident, Policy#\n- DOI must match progress notes exactly\n- Health insurance is secondary (COB)\n\nExamples: AAA, State Farm, Geico\n\nBilling:\n1) Bill auto insurance first for accident-related treatment\n2) Include DOI on claim\n3) Bill health insurance for non-accident diagnoses\n4) Some states are no-fault (bill own insurance)\n5) Others are at-fault (bill at-fault driver insurance)'},
   {cat:'insurance',q:'What is the Birthday Rule for dependent coverage?',a:'The Birthday Rule determines which parent\'s insurance is PRIMARY for a dependent child when both parents have insurance:\n\nThe parent whose birthday comes FIRST in the calendar year is primary.\n\nExample:\n- Dad DOB: March 15, Mom DOB: July 22\n- Dad\'s insurance = PRIMARY (March comes first)\n- Mom\'s insurance = SECONDARY\n\nImportant notes:\n- Only applies to dependent children\n- Does NOT consider which parent is older\n- If same birthday, gender rule may apply (varies by state)\n- Divorced parents: Court decree may override rule'},
-  {cat:'insurance',q:'What is Coordination of Benefits (COB)?',a:'COB determines the order insurance pays when a patient has multiple policies:\n\n1) Primary payer pays first based on benefits\n2) Secondary payer covers remaining balance (up to 100%)\n3) Tertiary payer (if any) covers any remaining\n\nCOB Rules:\n- Birthday Rule: Determines primary for dependents\n- Employment Rule: Active employer plan is primary\n- COBRA is usually secondary\n- Medicare + Commercial: Usually employer plan is primary for active workers\n\nWhen billing multiple insurances:\n1) Bill primary → get EOB\n2) Bill secondary with primary EOB attached\n3) Bill tertiary with both EOBs\n4) Patient responsibility is what remains after ALL insurances'},
+  {cat:'insurance',q:'What is Coordination of Benefits (COB)?',a:'COB determines the order insurance pays when a patient has multiple policies:\n\n1) Primary payer pays first based on benefits\n2) Secondary payer covers remaining balance (up to 100%)\n3) Tertiary payer (if any) covers any remaining\n\nCOB Rules:\n- Birthday Rule: Determines primary for dependents\n- Employment Rule: Active employer plan is primary\n- COBRA is usually secondary\n- Medicare + Commercial: Usually employer plan is primary for active workers\n\nWhen billing multiple insurances:\n1) Bill primary â†’ get EOB\n2) Bill secondary with primary EOB attached\n3) Bill tertiary with both EOBs\n4) Patient responsibility is what remains after ALL insurances'},
   {cat:'insurance',q:'What is a Subscriber vs Patient vs Dependent?',a:'Subscriber (Policy Holder/Member): The person who owns the insurance policy. Their name is on the insurance card.\n\nPatient: The person receiving medical treatment. May or may not be the subscriber.\n\nDependent: A person covered under the subscriber\'s plan (spouse, child under 26).\n\nExamples:\n- Wife (subscriber) covers Husband (patient) - bill under wife\'s policy\n- Parent (subscriber) covers Child (patient) - bill under parent\'s policy\n- Patient is also subscriber - bill under own policy\n\nAlways verify: Who is the subscriber? What is their Member ID? What is the patient\'s relationship to subscriber?'},
   {cat:'insurance',q:'What is a Payer ID and where to find it?',a:'Payer ID identifies the insurance company for electronic claims. Found on:\n\n1) Insurance card (clearinghouse section)\n2) Payer list in your practice management system\n3) Clearinghouse payer directory\n4) Insurance company website\n\nCommon Payer IDs:\n- BCBS: Varies by state (e.g., BCBS01, BLUES)\n- Aetna: AETNA or AETNA01\n- UnitedHealthcare: UHC or OPTUM\n- Cigna: CIGNA or CIGNA01\n- Medicare: 12345 (MAC jurisdiction)\n- Medicaid: Varies by state\n\nAlways verify correct Payer ID - wrong ID = rejected claim!'},
   {cat:'insurance',q:'What is a Prior Authorization and when is it needed?',a:'Prior Authorization (PA) is approval from insurance BEFORE a service is provided. Required for:\n\n- Surgeries and procedures\n- Advanced imaging (MRI, CT, PET)\n- Specialty medications\n- Durable medical equipment\n- Some specialist visits\n- Extended treatment plans\n\nWithout PA: Claim will be denied with CO-252 (Auth missing)\n\nPA Process:\n1) Check if service needs PA (payer website or provider manual)\n2) Submit clinical documentation and medical necessity\n3) Wait for approval (usually 3-15 business days)\n4) Record auth number in system\n5) Include auth# on claim\n\nEmergency services may not need PA (retro-auth possible).'},
@@ -6697,7 +6832,7 @@ var calcExpr = '';
 function calcInput(v) {
   if (v === 'C') { calcExpr = ''; document.getElementById('calcDisplay').value = ''; return; }
   calcExpr += v;
-  document.getElementById('calcDisplay').value = calcExpr.replace(/\*/g, '×').replace(/\//g, '÷');
+  document.getElementById('calcDisplay').value = calcExpr.replace(/\*/g, 'Ã—').replace(/\//g, 'Ã·');
 }
 function calcEval() {
   try { var r = Function('"use strict"; return (' + calcExpr + ')')(); document.getElementById('calcDisplay').value = r; calcExpr = String(r); }
@@ -6892,7 +7027,7 @@ async function chgSearchPatient() {
       await chgLoadPatientById(pts[0].patient_id);
     } else if (pts.length > 1) {
       var html = '<div style="background:#f3e5f5;border:2px solid #7b1fa2;border-radius:6px;padding:8px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">';
-      html += '<div><b>Found '+pts.length+' patients</b> — click a row to load:</div>';
+      html += '<div><b>Found '+pts.length+' patients</b> â€” click a row to load:</div>';
       html += '<span style="font-size:11px;color:#666">or press ESC to clear</span></div>';
       html += '<table><thead><tr><th>ID</th><th>MRN</th><th>Name</th><th>DOB</th><th>Phone</th><th>Email</th><th></th></tr></thead><tbody>';
       pts.forEach(function(p) {
@@ -7259,7 +7394,7 @@ function chgCheckAuthValidity() {
   if (!from || !to) { el.innerHTML = ''; return; }
   var today = new Date().toISOString().split('T')[0];
   if (today < from) { el.innerHTML = '<span style="color:#ff9800">&#9888; Auth not yet active (starts ' + from + ')</span>'; }
-  else if (today > to) { el.innerHTML = '<span style="color:#c62828">&#10008; Auth EXPIRED on ' + to + ' — will be rejected!</span>'; }
+  else if (today > to) { el.innerHTML = '<span style="color:#c62828">&#10008; Auth EXPIRED on ' + to + ' â€” will be rejected!</span>'; }
   else { el.innerHTML = '<span style="color:#2e7d32">&#10003; Auth is valid (expires ' + to + ')</span>'; }
 }
 
@@ -7344,10 +7479,10 @@ async function chgCheckAllEligibility() {
       var icon = data.status === 'active' ? '&#10003;' : data.status === 'expired' ? '&#9888;' : '&#10008;';
       html += '<div style="background:' + bgColor + ';border:1px solid ' + borderColor + ';border-radius:4px;padding:6px;margin-bottom:4px;font-size:11px">';
       html += '<b style="color:' + txtColor + '">' + icon + ' ' + ids[i].type + ': ' + (data.status || 'unknown').toUpperCase() + '</b>';
-      if (data.message) html += ' — ' + data.message;
+      if (data.message) html += ' â€” ' + data.message;
       html += '</div>';
     } catch(e) {
-      html += '<div style="background:#ffebee;border:1px solid #f44336;border-radius:4px;padding:6px;margin-bottom:4px;font-size:11px"><b style="color:#c62828">' + ids[i].type + ': ERROR — ' + e.message + '</b></div>';
+      html += '<div style="background:#ffebee;border:1px solid #f44336;border-radius:4px;padding:6px;margin-bottom:4px;font-size:11px"><b style="color:#c62828">' + ids[i].type + ': ERROR â€” ' + e.message + '</b></div>';
     }
   }
   document.getElementById('chgEligResult').innerHTML = html;
@@ -7361,7 +7496,7 @@ function chgSelectDependent() {
   var sel = document.getElementById('chgDependent').value;
   var pid = document.getElementById('chgPid').value.trim();
   if (!sel || !pid) return;
-  showToast('Dependent selected — charge will be billed under their insurance');
+  showToast('Dependent selected â€” charge will be billed under their insurance');
 }
 
 window._chargeDepId = null;
@@ -8305,7 +8440,7 @@ async function arcLoadCharge() {
   arcCurrentData = cms;
 
   let html = '<div style="background:#fff3e0;border:2px solid #e65100;border-radius:6px;padding:10px">';
-  html += '<div class="card-title" style="color:#e65100">Current Claim — ' + cid + '</div>';
+  html += '<div class="card-title" style="color:#e65100">Current Claim â€” ' + cid + '</div>';
   html += '<div class="grid-3">';
   html += '<div><b>Patient:</b> ' + cms.patient_name + '</div>';
   html += '<div><b>Payer:</b> ' + cms.payer_name + '</div>';
@@ -8406,8 +8541,8 @@ async function arcGenerateCMS1500() {
   if (cms.error) { showToast(cms.error, 'error'); return; }
 
   let html = '<div class="card" style="border:3px solid #1565c0;background:#fafafa">';
-  html += '<div class="card-title" style="color:#1565c0;font-size:16px">UPDATED CMS-1500 — Corrected Claim</div>';
-  html += '<div style="background:#ffecb3;border:1px solid #f57f17;border-radius:4px;padding:6px;margin-bottom:8px;font-weight:bold;font-size:12px">⚠ This is an UPDATED form after correction — verify all fields before submitting to payer</div>';
+  html += '<div class="card-title" style="color:#1565c0;font-size:16px">UPDATED CMS-1500 â€” Corrected Claim</div>';
+  html += '<div style="background:#ffecb3;border:1px solid #f57f17;border-radius:4px;padding:6px;margin-bottom:8px;font-weight:bold;font-size:12px">âš  This is an UPDATED form after correction â€” verify all fields before submitting to payer</div>';
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;border:2px solid #333;padding:10px;background:white;margin-bottom:10px">';
   html += '<div style="border:1px solid #ccc;padding:6px"><b>1. Payer Name:</b> ' + (cms.payer_name || '') + '</div>';
   html += '<div style="border:1px solid #ccc;padding:6px"><b>1a. Insured ID:</b> ' + (cms.insured_id || '') + '</div>';
@@ -8532,17 +8667,17 @@ async function providerVerifyAuth() {
   var isEffective = (dosBasedStatus === 'approved' || dosBasedStatus === 'active');
   var border = isEffective ? '#4caf50' : '#f44336';
   var labelColor = isEffective ? '#2e7d32' : '#c62828';
-  var statusText = isEffective ? 'ACTIVE — DOS within validity' : (dosExpired ? 'EXPIRED — DOS outside validity (' + dos + ' not between ' + (d.effective_date||'?') + ' and ' + (d.expiration_date||'?') + ')' : dosBasedStatus.toUpperCase());
+  var statusText = isEffective ? 'ACTIVE â€” DOS within validity' : (dosExpired ? 'EXPIRED â€” DOS outside validity (' + dos + ' not between ' + (d.effective_date||'?') + ' and ' + (d.expiration_date||'?') + ')' : dosBasedStatus.toUpperCase());
   var statusGuide = '';
-  if (d.status === 'intake') { border = '#2196f3'; statusText = 'INTAKE — Submitted to payer, awaiting review'; statusGuide = 'Authorization has been submitted to the payer but has not been reviewed yet. Check back later.'; }
-  else if (d.status === 'review') { border = '#ff9800'; statusText = 'IN REVIEW — Payer is reviewing the request'; statusGuide = 'Payer clinical reviewer is evaluating your authorization request.'; }
-  else if (d.status === 'pend') { border = '#ff9800'; statusText = 'PEND — Payer requested additional information'; statusGuide = 'Payer needs additional clinical documentation. Upload docs and resubmit.'; }
-  else if (d.status === 'hold') { border = '#9c27b0'; statusText = 'ON HOLD — Authorization placed on hold by payer'; statusGuide = 'Authorization is temporarily on hold. Contact payer for details.'; }
-  else if (d.status === 'denied') { border = '#f44336'; statusText = 'DENIED — Request was denied'; statusGuide = 'Authorization was denied. You may file an appeal.'; }
-  else if (d.status === 'retro_pending') { border = '#e91e63'; statusText = 'RETRO PENDING — Retro authorization under review'; statusGuide = 'Retro authorization request is pending payer review.'; }
+  if (d.status === 'intake') { border = '#2196f3'; statusText = 'INTAKE â€” Submitted to payer, awaiting review'; statusGuide = 'Authorization has been submitted to the payer but has not been reviewed yet. Check back later.'; }
+  else if (d.status === 'review') { border = '#ff9800'; statusText = 'IN REVIEW â€” Payer is reviewing the request'; statusGuide = 'Payer clinical reviewer is evaluating your authorization request.'; }
+  else if (d.status === 'pend') { border = '#ff9800'; statusText = 'PEND â€” Payer requested additional information'; statusGuide = 'Payer needs additional clinical documentation. Upload docs and resubmit.'; }
+  else if (d.status === 'hold') { border = '#9c27b0'; statusText = 'ON HOLD â€” Authorization placed on hold by payer'; statusGuide = 'Authorization is temporarily on hold. Contact payer for details.'; }
+  else if (d.status === 'denied') { border = '#f44336'; statusText = 'DENIED â€” Request was denied'; statusGuide = 'Authorization was denied. You may file an appeal.'; }
+  else if (d.status === 'retro_pending') { border = '#e91e63'; statusText = 'RETRO PENDING â€” Retro authorization under review'; statusGuide = 'Retro authorization request is pending payer review.'; }
 
   let html = '<div class="card" style="border:2px solid ' + border + '">';
-  html += '<div class="card-title">Authorization Verification — <span style="color:' + labelColor + '">' + statusText + '</span></div>';
+  html += '<div class="card-title">Authorization Verification â€” <span style="color:' + labelColor + '">' + statusText + '</span></div>';
   if (statusGuide) html += '<div style="background:#f5f5f5;border-left:3px solid ' + border + ';padding:4px 8px;margin-bottom:6px;font-size:10px;color:#555">' + statusGuide + '</div>';
   html += '<div style="font-size:10.5px">';
   html += '<div class="grid-3">';
@@ -8753,7 +8888,7 @@ async function payerLoadQueue() {
     html += '<tr style="background:' + rowBg + ';border-bottom:1px solid #ddd"><td style="padding:4px"><b>' + a.auth_id + '</b></td><td style="padding:4px">' + (a.patient_name || a.patient_id) + '</td><td style="padding:4px">' + (a.mrn || '-') + '</td><td style="padding:4px">' + (a.payer_name || '-') + '</td><td style="padding:4px">' + (a.prov_first || '') + ' ' + (a.prov_last || '') + '</td><td style="padding:4px">' + a.auth_type + '</td><td style="padding:4px">' + (a.procedure_code || '-') + '</td><td style="padding:4px">' + (a.submission_date || '-') + '</td><td style="padding:4px">' + statusBadge + '</td><td style="padding:4px">' + payerActions + '</td></tr>';
   });
   html += '</tbody></table></div>';
-  html += '<div style="font-size:10px;color:#888;margin-top:3px">Showing ' + auths.length + ' authorization(s) | Provider submits → Payer reviews → Approve/Deny/Request Info</div>';
+  html += '<div style="font-size:10px;color:#888;margin-top:3px">Showing ' + auths.length + ' authorization(s) | Provider submits â†’ Payer reviews â†’ Approve/Deny/Request Info</div>';
   document.getElementById('payerQueueResult').innerHTML = html;
 }
 async function payerStartReview(authId) {
@@ -11337,15 +11472,15 @@ function codingClearSearch() {
       return;
     }
     var msg = '';
-    msg += '<div style="text-align:center;margin-bottom:16px"><b style="font-size:16px;color:#1a237e">📱 Install Provision PMS App</b></div>';
+    msg += '<div style="text-align:center;margin-bottom:16px"><b style="font-size:16px;color:#1a237e">ðŸ“± Install Provision PMS App</b></div>';
     msg += '<div style="text-align:left;background:#f5f5f5;padding:14px;border-radius:8px;margin-bottom:12px">';
-    msg += '<b>iPhone (Safari):</b><br>1. Tap <b>Share</b> button (□↑)<br>2. Tap <b>"Add to Home Screen"</b><br>3. Tap <b>Add</b>';
+    msg += '<b>iPhone (Safari):</b><br>1. Tap <b>Share</b> button (â–¡â†‘)<br>2. Tap <b>"Add to Home Screen"</b><br>3. Tap <b>Add</b>';
     msg += '</div>';
     msg += '<div style="text-align:left;background:#f5f5f5;padding:14px;border-radius:8px;margin-bottom:12px">';
-    msg += '<b>Android (Chrome):</b><br>1. Tap <b>3 dots</b> menu (⋮)<br>2. Tap <b>"Install app"</b> or <b>"Add to Home Screen"</b>';
+    msg += '<b>Android (Chrome):</b><br>1. Tap <b>3 dots</b> menu (â‹®)<br>2. Tap <b>"Install app"</b> or <b>"Add to Home Screen"</b>';
     msg += '</div>';
     msg += '<div style="text-align:left;background:#f5f5f5;padding:14px;border-radius:8px;margin-bottom:12px">';
-    msg += '<b>Desktop (Chrome/Edge):</b><br>1. Click <b>Install</b> icon in address bar<br>2. Or: <b>⋮</b> menu → <b>"Install App"</b>';
+    msg += '<b>Desktop (Chrome/Edge):</b><br>1. Click <b>Install</b> icon in address bar<br>2. Or: <b>â‹®</b> menu â†’ <b>"Install App"</b>';
     msg += '</div>';
     msg += '<div style="font-size:11px;color:#888;margin-bottom:12px">After install, the app works offline and launches from your home screen.</div>';
     var overlay = document.createElement('div');

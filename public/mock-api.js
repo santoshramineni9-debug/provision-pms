@@ -41,7 +41,10 @@
       {id:2,patient_id:2,payer_name:'Blue Cross Blue Shield',policy_number:'BCBS-784521',member_id:'BCBS-M002',group_number:'GRP-3344',subscriber_name:'Maria Garcia',relationship:'Self',plan_type:'HMO',copay:25,deductible:300,coinsurance:15,insurance_type:'primary',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active',effective_status:'active'},
       {id:3,patient_id:3,payer_name:'UnitedHealthcare',policy_number:'UHC-991234',member_id:'UHC-M003',group_number:'GRP-7788',subscriber_name:'Robert Johnson',relationship:'Self',plan_type:'PPO',copay:35,deductible:750,coinsurance:25,insurance_type:'primary',effective_date:'2026-03-01',termination_date:'2027-02-28',status:'active',effective_status:'active'},
       {id:4,patient_id:4,payer_name:'Cigna',policy_number:'CIG-445678',member_id:'CIG-M004',group_number:'GRP-2211',subscriber_name:'Sarah Williams',relationship:'Self',plan_type:'EPO',copay:20,deductible:400,coinsurance:10,insurance_type:'primary',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active',effective_status:'active'},
-      {id:5,patient_id:5,payer_name:'Aetna',policy_number:'AET-556789',member_id:'AET-M005',group_number:'GRP-5521',subscriber_name:'David Brown',relationship:'Self',plan_type:'POS',copay:40,deductible:600,coinsurance:30,insurance_type:'primary',effective_date:'2026-02-01',termination_date:'2027-01-31',status:'active',effective_status:'active'}
+      {id:5,patient_id:5,payer_name:'Aetna',policy_number:'AET-556789',member_id:'AET-M005',group_number:'GRP-5521',subscriber_name:'David Brown',relationship:'Self',plan_type:'POS',copay:40,deductible:600,coinsurance:30,insurance_type:'primary',effective_date:'2026-02-01',termination_date:'2027-01-31',status:'active',effective_status:'active'},
+      {id:6,patient_id:1,payer_name:'Blue Cross Blue Shield',policy_number:'BCBS-S001',member_id:'BCBS-S006',group_number:'GRP-8888',subscriber_name:'John Smith',relationship:'Self',plan_type:'HMO',copay:20,deductible:250,coinsurance:10,insurance_type:'secondary',effective_date:'2025-01-01',termination_date:'2025-12-31',status:'active',effective_status:'expired'},
+      {id:7,patient_id:1,payer_name:'Cigna',policy_number:'CIG-S001',member_id:'CIG-S007',group_number:'GRP-9999',subscriber_name:'John Smith',relationship:'Self',plan_type:'PPO',copay:15,deductible:200,coinsurance:10,insurance_type:'secondary',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active',effective_status:'active'},
+      {id:8,patient_id:3,payer_name:'Blue Cross Blue Shield',policy_number:'BCBS-S003',member_id:'BCBS-S008',group_number:'GRP-4444',subscriber_name:'Robert Johnson',relationship:'Self',plan_type:'HMO',copay:20,deductible:250,coinsurance:10,insurance_type:'secondary',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active',effective_status:'active'}
     ];
     setStore('insurances', insurances);
 
@@ -364,7 +367,42 @@
       var patient = allPatients.find(function(p){ return p.id===ins.patient_id || p.patient_id===ins.patient_id; });
       var eligStatus = ins.effective_status || ins.status || 'active';
       if (ins.termination_date && ins.termination_date < new Date().toISOString().slice(0,10)) eligStatus = 'expired';
-      return { data: {verified:true,status:eligStatus,insurance:ins,patient:patient || null,benefits:[{type:'Medical',covered:true,copay:'$' + (ins.copay||30)}],card_image_front:ins.card_image_front||null,card_image_back:ins.card_image_back||null} };
+      var allPatientIns = allIns.filter(function(i){ return i.patient_id===ins.patient_id; });
+      var otherCoverages = allPatientIns.filter(function(i){ return i.id !== ins.id; });
+      var payerShort = (ins.payer_name||'').replace(/ /g,'').toUpperCase().slice(0,6);
+      var payerResponse = {
+        payer_name: ins.payer_name,
+        payer_address: 'PO BOX 5240, KINGSTON, NY 12402-5240',
+        payer_phone: '877-269-0000',
+        payer_website: 'www.'+payerShort.toLowerCase()+'provider.com',
+        subscriber_name: ins.subscriber_name || (patient?patient.first_name+' '+patient.last_name:''),
+        subscriber_address: patient?((patient.address||'')+(patient.city?', '+patient.city:'')+(patient.state?', '+patient.state:'')+(patient.zip?' '+patient.zip:'')):'',
+        subscriber_dob: patient?patient.dob:'',
+        plan_name: payerShort+' '+(ins.plan_type||'')+' PLAN',
+        service_type: 'Health Benefit Plan Coverage',
+        insurance_type_resp: ins.insurance_type==='primary'?'Medicare Primary':ins.insurance_type.toUpperCase()+' Coverage',
+        plan_begin_date: ins.effective_date||'',
+        plan_end_date: ins.termination_date||'',
+        coverage_type: 'MODSNP',
+        eligibility_code: 'MODSNP3P'
+      };
+      var addrMatch = true;
+      if (patient) {
+        var ourAddr = ((patient.address||'')+(patient.city?', '+patient.city:'')+(patient.state?', '+patient.state:'')+(patient.zip?' '+patient.zip:'')).toLowerCase().replace(/\s+/g,' ');
+        var respAddr = payerResponse.subscriber_address.toLowerCase().replace(/\s+/g,' ');
+        if (ourAddr && respAddr && ourAddr.length>3 && ourAddr !== respAddr) addrMatch = false;
+      }
+      return { data: {verified:true,status:eligStatus,insurance:ins,patient:patient||null,all_coverages:allPatientIns,other_coverages:otherCoverages,payer_response:payerResponse,address_match:addrMatch,benefits:[{type:'Medical',covered:true,copay:'$'+(ins.copay||30)}],card_image_front:ins.card_image_front||null,card_image_back:ins.card_image_back||null} };
+    }
+    if ((m = path.match(/^\/api\/eligibility\/update-type$/))) {
+      if (method === 'POST') {
+        var insId = body.insurance_id;
+        var newType = body.insurance_type;
+        var items = getStore('insurances');
+        var idx = items.findIndex(function(i){return i.id===insId;});
+        if (idx >= 0) { items[idx].insurance_type = newType; setStore('insurances', items); }
+        return { data: {ok:true,insurance:items[idx]} };
+      }
     }
     if ((m = path.match(/^\/api\/eligibility\/(\d+)$/))) {
       var eid = parseInt(m[1]);
