@@ -6939,21 +6939,52 @@ async function chgLoadPatientById(pid) {
   html += '<div style="grid-column:span 2"><b>Address:</b> '+(p.address||'')+(p.city?', '+p.city:'')+(p.state?', '+p.state:'')+(p.zip?' '+p.zip:'')+'</div>';
   html += '</div>';
   if (p.insurances && p.insurances.length) {
-    html += '<div style="margin-top:8px;border-top:1px solid #c8e6c9;padding-top:8px"><b>Insurance ('+insCount+'):</b></div>';
+    html += '<div style="margin-top:8px;border-top:1px solid #c8e6c9;padding-top:8px">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b>Insurance Card Lookup ('+insCount+')</b></div>';
     p.insurances.forEach(function(i) {
       var es = i.effective_status || i.status || 'active';
       var esColor = es==='expired'?'#c62828':es==='pending'?'#ff9800':'#2e7d32';
       var esBg = es==='expired'?'#ffebee':es==='pending'?'#fff3e0':'#e8f5e9';
-      html += '<div style="border:1px solid #ddd;border-radius:6px;padding:8px;margin-top:6px;background:white;display:flex;justify-content:space-between;align-items:center">';
-      html += '<div style="font-size:12px">';
-      html += '<b>'+i.payer_name+'</b> ('+i.insurance_type+') &mdash; Member ID: <b>'+(i.member_id||'-')+'</b>';
-      html += ' | Copay: $'+(i.copay||0)+' | Deductible: $'+(i.deductible||0);
+      var typeColor = i.insurance_type==='primary'?'#1565c0':'#6a1b9a';
+      var typeBg = i.insurance_type==='primary'?'#e3f2fd':'#f3e5f5';
+      html += '<div style="border:2px solid '+(es==='expired'?'#f44336':'#4caf50')+';border-radius:10px;padding:12px;margin-top:8px;background:white">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+      html += '<div style="display:flex;gap:8px;align-items:center">';
+      html += '<span style="background:'+typeBg+';color:'+typeColor+';padding:3px 10px;border-radius:4px;font-weight:bold;font-size:11px">'+i.insurance_type.toUpperCase()+'</span>';
+      html += '<b style="font-size:14px">'+i.payer_name+'</b>';
       html += '</div>';
-      html += '<span style="background:'+esBg+';color:'+esColor+';padding:2px 8px;border-radius:4px;font-weight:bold;font-size:11px">'+es.toUpperCase()+'</span>';
+      html += '<span style="background:'+esBg+';color:'+esColor+';padding:3px 10px;border-radius:4px;font-weight:bold;font-size:11px">'+es.toUpperCase()+'</span>';
+      html += '</div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:12px;background:#f5f5f5;border-radius:6px;padding:10px">';
+      html += '<div><b style="color:#1565c0">Member ID:</b><div style="font-size:14px;font-weight:bold;color:#333;margin-top:2px">'+(i.member_id||'-')+'</div></div>';
+      html += '<div><b style="color:#1565c0">Group #:</b><div style="font-size:14px;font-weight:bold;color:#333;margin-top:2px">'+(i.group_number||'-')+'</div></div>';
+      html += '<div><b style="color:#1565c0">Plan:</b><div style="font-size:14px;font-weight:bold;color:#333;margin-top:2px">'+(i.plan_type||'-')+'</div></div>';
+      html += '<div><b style="color:#1565c0">Copay:</b><div style="font-size:14px;font-weight:bold;color:#333;margin-top:2px">$'+(i.copay||0)+'</div></div>';
+      html += '<div><b style="color:#1565c0">Deductible:</b><div style="font-size:14px;font-weight:bold;color:#333;margin-top:2px">$'+(i.deductible||0)+'</div></div>';
+      html += '<div><b style="color:#1565c0">Coinsurance:</b><div style="font-size:14px;font-weight:bold;color:#333;margin-top:2px">'+(i.coinsurance||'-')+'%</div></div>';
+      html += '</div>';
+      html += '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">';
+      if (i.member_id) {
+        html += '<button class="btn btn-sm btn-success" onclick="copyMemberAndVerify(\''+i.member_id+'\')">&#128203; Copy Member ID & Verify Eligibility</button>';
+      }
+      if (i.card_image_front || i.card_image_back) {
+        html += '<button class="btn btn-sm btn-info" onclick="showInsuranceCard(\''+i.payer_name+'\',\''+(i.card_image_front||'')+'\',\''+(i.card_image_back||'')+'\')">&#128179; View Insurance Card</button>';
+      }
+      html += '</div>';
+      if (i.card_image_front || i.card_image_back) {
+        html += '<div style="display:flex;gap:8px;margin-top:8px">';
+        if (i.card_image_front) html += '<img src="'+i.card_image_front+'" style="max-width:220px;max-height:130px;border:2px solid #4caf50;border-radius:6px;cursor:pointer;object-fit:cover" onclick="window.open(this.src)" title="Card Front">';
+        if (i.card_image_back) html += '<img src="'+i.card_image_back+'" style="max-width:220px;max-height:130px;border:2px solid #4caf50;border-radius:6px;cursor:pointer;object-fit:cover" onclick="window.open(this.src)" title="Card Back">';
+        html += '</div>';
+      }
       html += '</div>';
     });
+    html += '</div>';
   } else {
-    html += '<div style="margin-top:8px;border-top:1px solid #c8e6c9;padding-top:8px;color:#c62828;font-weight:bold">No Insurance Linked</div>';
+    html += '<div style="margin-top:8px;border-top:1px solid #c8e6c9;padding-top:8px;padding:10px;background:#fff3e0;border:1px solid #ff9800;border-radius:6px">';
+    html += '<div style="font-weight:bold;color:#e65100">&#9888; No Insurance Linked</div>';
+    html += '<div style="font-size:12px;margin-top:4px">Patient has no insurance on file. Add insurance to verify eligibility.</div>';
+    html += '</div>';
   }
   var chgRes = await fetch(API + '/api/charges?patient_id=' + pid);
   var charges = await chgRes.json();
