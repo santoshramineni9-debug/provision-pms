@@ -769,6 +769,7 @@ function getSiteContent() {
       ],
       demoLink: { link:'https://meet.zoho.in/your-demo-link', title:'AR Calling Demo Class', schedule:'Daily 6:00 PM' },
       announcements: '',
+      running_notes: [],
       lastUpdated: new Date().toISOString()
     };
   }
@@ -859,6 +860,19 @@ app.post('/api/site-videos', express.json(), (req, res) => {
     res.json(content.pdfs || []);
   });
 
+  // ============ DAILY VIDEO + NOTES ============
+  app.post('/api/site-running-notes', express.json(), (req, res) => {
+    const content = getSiteContent();
+    content.running_notes = req.body.running_notes || [];
+    saveSiteContent(content);
+    res.json({ ok: true, running_notes: content.running_notes });
+  });
+
+  app.get('/api/site-running-notes', (req, res) => {
+    const content = getSiteContent();
+    res.json(content.running_notes || []);
+  });
+
   // Serve Provision AR Training Website at /training
 app.use('/training', express.static(path.join(__dirname, 'website')));
 
@@ -890,6 +904,13 @@ app.post('/api/deploy-website', express.json(), (req, res) => {
     js += '  pdfs: [\n';
     (content.pdfs || []).forEach(p => {
       js += '    { title:' + JSON.stringify(p.title || '') + ', course:' + JSON.stringify(p.course || '') + ', url:' + JSON.stringify(p.url || '') + ', description:' + JSON.stringify(p.description || '') + ', pages:' + JSON.stringify(p.pages || '') + ', size:' + JSON.stringify(p.size || '') + ' },\n';
+    });
+    js += '  ],\n';
+    js += '  running_notes: [\n';
+    (content.running_notes || []).forEach(n => {
+      if (n.visible !== false) {
+        js += '    { date:' + JSON.stringify(n.date || '') + ', video_url:' + JSON.stringify(n.video_url || '') + ', video_title:' + JSON.stringify(n.video_title || '') + ', course:' + JSON.stringify(n.course || '') + ', notes:' + JSON.stringify(n.notes || '') + ', images:' + JSON.stringify(n.images || []) + ' },\n';
+      }
     });
     js += '  ]\n};\n';
     const deployDir = path.join(__dirname, 'deploy');

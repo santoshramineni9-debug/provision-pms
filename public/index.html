@@ -2760,6 +2760,7 @@
             <a href="#" onclick="wgShowTab('inquiries');return false" style="display:block;padding:8px 10px;color:#c62828;font-weight:600;font-size:12px;border-radius:4px;text-decoration:none" onmouseover="this.style.background='#ffebee'" onmouseout="this.style.background='transparent'">&#x1F4E8; Student Inquiries</a>
             <a href="#" onclick="wgShowTab('videos');return false" style="display:block;padding:8px 10px;color:#6a1b9a;font-weight:600;font-size:12px;border-radius:4px;text-decoration:none" onmouseover="this.style.background='#f3e5f5'" onmouseout="this.style.background='transparent'">&#x1F3AC; Demo Videos</a>
             <a href="#" onclick="wgShowTab('pdfs');return false" style="display:block;padding:8px 10px;color:#d84315;font-weight:600;font-size:12px;border-radius:4px;text-decoration:none" onmouseover="this.style.background='#fbe9e7'" onmouseout="this.style.background='transparent'">&#x1F4C4; Course PDFs</a>
+            <a href="#" onclick="wgShowTab('runningnotes');return false" style="display:block;padding:8px 10px;color:#00695c;font-weight:600;font-size:12px;border-radius:4px;text-decoration:none" onmouseover="this.style.background='#e0f2f1'" onmouseout="this.style.background='transparent'">&#x1F4DD; Daily Running Notes</a>
           </div>
         </div>
 
@@ -2822,6 +2823,19 @@
               <button class="btn btn-success" onclick="wgSavePdfs()">&#x1F4BE; Save PDFs</button>
             </div>
             <div id="wgPdfMsg" style="margin-top:8px;font-size:12px;color:#2e7d32"></div>
+          </div>
+
+          <div id="wgContent-runningnotes" class="card" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <div class="card-title" style="margin:0;border:none;padding:0;color:#00695c">&#x1F4DD; Daily Video + Notes</div>
+              <button class="btn btn-primary" style="background:#00695c" onclick="wgAddRunningNote()">+ Add Daily Entry</button>
+            </div>
+            <p style="font-size:11px;color:#888;margin-bottom:10px">Upload daily class video link, running notes, and images. Appears on website for students.</p>
+            <div id="wgRunningNotesList"></div>
+            <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+              <button class="btn btn-success" onclick="wgSaveRunningNotes()">&#x1F4BE; Save All</button>
+            </div>
+            <div id="wgRunningNotesMsg" style="margin-top:8px;font-size:12px;color:#2e7d32"></div>
           </div>
         </div>
       </div>
@@ -3879,7 +3893,7 @@ function closeModal(id) { document.getElementById(id).classList.remove('active')
 // ============ WEBSITE CONTENT MANAGER ============
 var wgCourses = [];
 function wgShowTab(tab) {
-  ['courses','demolink','announcements','inquiries','videos','pdfs'].forEach(function(t) {
+  ['courses','demolink','announcements','inquiries','videos','pdfs','runningnotes'].forEach(function(t) {
     var el = document.getElementById('wgContent-' + t);
     if (el) el.style.display = (t === tab) ? 'block' : 'none';
   });
@@ -4103,6 +4117,106 @@ async function wgSavePdfs() {
   document.getElementById('wgPdfMsg').innerHTML = '&#x2705; PDFs saved & deployed!';
   showToast('PDFs saved & deployed!');
 }
+
+// ============ DAILY VIDEO + NOTES ============
+var wgRunningNotes = [];
+var wgRNImagePreviews = {};
+
+async function wgLoadRunningNotes() {
+  var res = await fetch(API + '/api/site-content');
+  var data = await res.json();
+  wgRunningNotes = data.running_notes || [];
+  renderWgRunningNotes();
+}
+
+function renderWgRunningNotes() {
+  var html = '';
+  if (!wgRunningNotes.length) {
+    html = '<div style="text-align:center;color:#999;padding:30px">No daily entries yet. Click "+ Add Daily Entry" to add video + notes for today.</div>';
+    document.getElementById('wgRunningNotesList').innerHTML = html;
+    return;
+  }
+  wgRunningNotes.forEach(function(n, i) {
+    html += '<div style="border:1px solid #ddd;border-radius:8px;padding:12px;margin-bottom:12px;background:#f9fafb">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+    html += '<b style="color:#00695c;font-size:14px">&#x1F4C5; ' + (n.date || 'No Date') + '</b>';
+    html += '<div style="display:flex;gap:6px">';
+    html += '<button class="btn btn-sm" style="background:#9e9e9e;color:#fff" onclick="if('+i+'>0){var t=wgRunningNotes['+i+'];wgRunningNotes['+i+']=wgRunningNotes['+i+'-1];wgRunningNotes['+i+'-1]=t;renderWgRunningNotes()}">&#9650;</button>';
+    html += '<button class="btn btn-sm" style="background:#9e9e9e;color:#fff" onclick="if('+i+'<wgRunningNotes.length-1){var t=wgRunningNotes['+i+'];wgRunningNotes['+i+']=wgRunningNotes['+i+'+1];wgRunningNotes['+i+'+1]=t;renderWgRunningNotes()}">&#9660;</button>';
+    html += '<button class="btn btn-sm" style="background:#c62828;color:#fff" onclick="wgRunningNotes.splice('+i+',1);renderWgRunningNotes()">Delete</button>';
+    html += '</div></div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
+    html += '<div><label style="font-size:11px;font-weight:bold;color:#555">Date *</label><input type="date" value="' + (n.date||'') + '" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;font-size:12px" onchange="wgRunningNotes['+i+'].date=this.value"></div>';
+    html += '<div><label style="font-size:11px;font-weight:bold;color:#555">YouTube Video URL</label><input type="url" value="' + (n.video_url||'').replace(/"/g,'&quot;') + '" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;font-size:12px" placeholder="https://youtube.com/watch?v=..." onchange="wgRunningNotes['+i+'].video_url=this.value"></div>';
+    html += '<div><label style="font-size:11px;font-weight:bold;color:#555">Video Title</label><input type="text" value="' + (n.video_title||'').replace(/"/g,'&quot;') + '" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;font-size:12px" placeholder="Day 1 - AR Calling Basics" onchange="wgRunningNotes['+i+'].video_title=this.value"></div>';
+    html += '<div><label style="font-size:11px;font-weight:bold;color:#555">Course / Tag</label><input type="text" value="' + (n.course||'').replace(/"/g,'&quot;') + '" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;font-size:12px" placeholder="AR Calling" onchange="wgRunningNotes['+i+'].course=this.value"></div>';
+    html += '</div>';
+    html += '<div style="margin-bottom:8px"><label style="font-size:11px;font-weight:bold;color:#555">Running Notes (Text)</label><textarea id="wgRNNotes_'+i+'" rows="4" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:12px;box-sizing:border-box" placeholder="Type or paste today\'s class notes here..." onchange="wgRunningNotes['+i+'].notes=this.value">' + (n.notes||'').replace(/</g,'&lt;') + '</textarea></div>';
+    html += '<div style="margin-bottom:8px">';
+    html += '<label style="font-size:11px;font-weight:bold;color:#555">Images</label>';
+    html += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">';
+    html += '<input type="file" id="wgRNImg_'+i+'" accept="image/*" multiple style="font-size:11px" onchange="wgRNUploadImage('+i+')">';
+    html += '<button class="btn btn-sm" style="background:#00695c;color:#fff" onclick="document.getElementById(\'wgRNImg_'+i+'\').click()">+ Upload Images</button>';
+    html += '</div>';
+    html += '<div id="wgRNImgList_'+i+'" style="display:flex;gap:8px;flex-wrap:wrap">';
+    var imgs = n.images || [];
+    imgs.forEach(function(img, j) {
+      html += '<div style="position:relative;border:1px solid #ddd;border-radius:6px;overflow:hidden;width:120px">';
+      if (img.startsWith('data:') || img.startsWith('http') || img.startsWith('/uploads/')) {
+        html += '<img src="' + img + '" style="width:120px;height:90px;object-fit:cover;display:block">';
+      } else {
+        html += '<div style="width:120px;height:90px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:10px;color:#999">Image</div>';
+      }
+      html += '<button style="position:absolute;top:2px;right:2px;background:#c62828;color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:10px;cursor:pointer" onclick="wgRunningNotes['+i+'].images.splice('+j+',1);renderWgRunningNotes()">&#10005;</button>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+    html += '<div style="display:flex;gap:6px">';
+    html += '<label style="font-size:11px;font-weight:bold;color:#555;display:flex;align-items:center;gap:4px"><input type="checkbox" '+(n.visible!==false?'checked':'')+' onchange="wgRunningNotes['+i+'].visible=this.checked"> Visible on Website</label>';
+    html += '</div>';
+    html += '</div>';
+  });
+  document.getElementById('wgRunningNotesList').innerHTML = html;
+}
+
+function wgAddRunningNote() {
+  var today = new Date().toISOString().slice(0, 10);
+  wgRunningNotes.unshift({
+    date: today, video_url: '', video_title: '', course: '', notes: '', images: [], visible: true
+  });
+  renderWgRunningNotes();
+}
+
+async function wgRNUploadImage(idx) {
+  var fileInput = document.getElementById('wgRNImg_' + idx);
+  if (!fileInput || !fileInput.files.length) return;
+  if (!wgRunningNotes[idx].images) wgRunningNotes[idx].images = [];
+  for (var f = 0; f < fileInput.files.length; f++) {
+    var file = fileInput.files[f];
+    if (file.size > 10 * 1024 * 1024) { showToast('Image too large (max 10MB)', 'error'); continue; }
+    var reader = new FileReader();
+    reader.onload = (function(idx) {
+      return function(e) {
+        wgRunningNotes[idx].images.push(e.target.result);
+        renderWgRunningNotes();
+      };
+    })(idx);
+    reader.readAsDataURL(file);
+  }
+  fileInput.value = '';
+}
+
+async function wgSaveRunningNotes() {
+  await fetch(API + '/api/site-running-notes', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({running_notes: wgRunningNotes})
+  });
+  document.getElementById('wgRunningNotesMsg').innerHTML = '&#x2705; Saved successfully!';
+  showToast('Daily Video + Notes saved!');
+}
+
+wgLoadRunningNotes();
 
 // ============ SHARED PATIENT SEARCH ============
 async function searchPatientGeneric(searchInputId, resultDivId, pidTargetId, insTargetId) {

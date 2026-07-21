@@ -123,5 +123,16 @@
       "size": "8 KB"
     }
   ],
-  "lastUpdated": "2026-07-19T06:17:15.263Z"
+  "lastUpdated": "2026-07-21T14:30:40.354Z",
+  "running_notes": [
+    {
+      "date": "2026-07-21",
+      "video_url": "https://youtube.com/watch?v=test",
+      "video_title": "Day 1 - AR Basics",
+      "course": "AR Calling",
+      "notes": "Today we covered AR overview",
+      "images": [],
+      "visible": true
+    }
+  ]
 }
