@@ -237,7 +237,13 @@
 
     // ===== PATIENTS =====
     if (path === '/api/patients' && method === 'GET') {
-      return { data: getStore('patients') };
+      var patients = getStore('patients');
+      var allIns = getStore('insurances');
+      patients = patients.map(function(p) {
+        var linkedIns = allIns.filter(function(i) { return i.patient_id === p.id || i.patient_id === p.patient_id; });
+        return Object.assign({}, p, { insurance_count: linkedIns.length, insurances: linkedIns });
+      });
+      return { data: patients };
     }
     if (path === '/api/patients' && method === 'POST') {
       var patients = getStore('patients');
@@ -279,7 +285,12 @@
       return { data: {ok:true} };
     }
     if ((m = path.match(/^\/api\/patients\/(\d+)\/insurance\/link$/))) {
-      return { data: {ok:true,insurance:{id:nextId('insurances')}} };
+      var linkPid = parseInt(m[1]);
+      var ins = getStore('insurances');
+      var newIns = Object.assign({}, body, { patient_id: linkPid, id: nextId('insurances'), created_at: new Date().toISOString() });
+      ins.push(newIns);
+      setStore('insurances', ins);
+      return { data: {ok:true,insurance:newIns} };
     }
     if ((m = path.match(/^\/api\/patients\/(\d+)\/insurance\/reorder$/))) {
       return { data: {ok:true} };
@@ -291,7 +302,10 @@
       var pid = parseInt(m[1]);
       if (method === 'GET') {
         var patient = getStore('patients').find(function(p){return p.id===pid;});
-        return patient ? { data: patient } : { status: 404, data: {error:'Not found'} };
+        if (!patient) return { status: 404, data: {error:'Not found'} };
+        var linkedIns = getStore('insurances').filter(function(i){return i.patient_id===pid;});
+        var dependents = getStore('dependents').filter(function(d){return d.patient_id===pid;});
+        return { data: Object.assign({}, patient, {insurances: linkedIns, dependents: dependents}) };
       }
       if (method === 'PUT') {
         var patients = getStore('patients');
@@ -365,6 +379,12 @@
       body.id = nextId('charges');
       body.charge_id = body.charge_id || 'CHG' + String(body.id).padStart(3,'0');
       body.status = body.status || 'pending';
+      var totalCharges = 0;
+      if (body.line_items && body.line_items.length) {
+        totalCharges = body.line_items.reduce(function(s, li) { return s + (li.charge_amount || 0) * (li.units || 1); }, 0);
+      }
+      body.total_charges = totalCharges;
+      body.billed_amount = totalCharges;
       chg.push(body);
       setStore('charges', chg);
       return { data: body };

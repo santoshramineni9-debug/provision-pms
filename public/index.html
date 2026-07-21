@@ -106,7 +106,49 @@
         <div id="insMgrPatientInfo"></div>
         <div id="insMgrList" style="margin-top:10px"></div>
         <div style="font-size:10px;color:#888;margin-top:4px">Insurance is managed by the Payer via Eligibility enrollment. Use Up/Down arrows to change priority order.</div>
-        <button class="btn btn-warning" id="insMgrDepAddBtn" style="display:none;margin-top:8px" onclick="insMgrShowDepForm()">+ Add Dependent</button>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-success" id="insMgrAddInsBtn" style="display:none" onclick="insMgrShowAddInsurance()">+ Add Insurance Manually</button>
+          <button class="btn btn-warning" id="insMgrDepAddBtn" style="display:none" onclick="insMgrShowDepForm()">+ Add Dependent</button>
+        </div>
+        <div id="insMgrAddInsForm" style="display:none;margin-top:10px;border:2px solid #4caf50;border-radius:8px;padding:12px;background:#f8fff8">
+          <div class="card-title" style="color:#2e7d32">Add Insurance (Primary & Secondary)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <!-- PRIMARY INSURANCE -->
+            <div style="border:2px solid #e8f5e9;border-radius:8px;padding:10px;background:#f1f8e9">
+              <div style="font-weight:bold;color:#2e7d32;margin-bottom:8px;font-size:13px">1. PRIMARY Insurance</div>
+              <div class="form-grid" style="grid-template-columns:1fr">
+                <div class="form-group"><label>Payer Name *</label><input id="insAddPayer1" placeholder="e.g. BCBS, Aetna, UHC"></div>
+                <div class="form-group"><label>Member ID *</label><input id="insAddMemberId1" placeholder="From insurance card"></div>
+                <div class="form-group"><label>Group Number</label><input id="insAddGroup1" placeholder="e.g. GRP-1234"></div>
+                <div class="form-group"><label>Plan Type</label><select id="insAddPlanType1"><option value="PPO">PPO</option><option value="HMO">HMO</option><option value="EPO">EPO</option><option value="POS">POS</option><option value="Medicare">Medicare</option><option value="Medicaid">Medicaid</option><option value="Other">Other</option></select></div>
+                <div class="form-group"><label>Subscriber Name</label><input id="insAddSubscriber1" placeholder="Name on card"></div>
+                <div class="form-group"><label>Relationship</label><select id="insAddRelation1"><option value="Self">Self</option><option value="Spouse">Spouse</option><option value="Child">Child</option><option value="Other">Other</option></select></div>
+                <div class="form-group"><label>Effective Date</label><input type="date" id="insAddEffDate1"></div>
+                <div class="form-group"><label>Copay</label><input type="number" id="insAddCopay1" placeholder="0" step="0.01"></div>
+                <div class="form-group"><label>Deductible</label><input type="number" id="insAddDeductible1" placeholder="0" step="0.01"></div>
+              </div>
+            </div>
+            <!-- SECONDARY INSURANCE -->
+            <div style="border:2px solid #e3f2fd;border-radius:8px;padding:10px;background:#e8f4fd">
+              <div style="font-weight:bold;color:#1565c0;margin-bottom:8px;font-size:13px">2. SECONDARY Insurance <span style="font-weight:normal;font-size:11px;color:#888">(optional)</span></div>
+              <div class="form-grid" style="grid-template-columns:1fr">
+                <div class="form-group"><label>Payer Name</label><input id="insAddPayer2" placeholder="e.g. Medicare, Cigna"></div>
+                <div class="form-group"><label>Member ID</label><input id="insAddMemberId2" placeholder="From insurance card"></div>
+                <div class="form-group"><label>Group Number</label><input id="insAddGroup2" placeholder="e.g. GRP-1234"></div>
+                <div class="form-group"><label>Plan Type</label><select id="insAddPlanType2"><option value="PPO">PPO</option><option value="HMO">HMO</option><option value="EPO">EPO</option><option value="POS">POS</option><option value="Medicare">Medicare</option><option value="Medicaid">Medicaid</option><option value="Other">Other</option></select></div>
+                <div class="form-group"><label>Subscriber Name</label><input id="insAddSubscriber2" placeholder="Name on card"></div>
+                <div class="form-group"><label>Relationship</label><select id="insAddRelation2"><option value="Self">Self</option><option value="Spouse">Spouse</option><option value="Child">Child</option><option value="Other">Other</option></select></div>
+                <div class="form-group"><label>Effective Date</label><input type="date" id="insAddEffDate2"></div>
+                <div class="form-group"><label>Copay</label><input type="number" id="insAddCopay2" placeholder="0" step="0.01"></div>
+                <div class="form-group"><label>Deductible</label><input type="number" id="insAddDeductible2" placeholder="0" step="0.01"></div>
+              </div>
+            </div>
+          </div>
+          <div class="actions" style="margin-top:10px">
+            <button class="btn btn-success" onclick="insMgrSaveBothInsurances()">Save Primary & Secondary</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('insMgrAddInsForm').style.display='none';document.getElementById('insMgrAddInsBtn').style.display='inline-block'">Cancel</button>
+          </div>
+        </div>
         <div id="insMgrDepForm" style="display:none;margin-top:10px">
           <div class="card-title">Add Dependent</div>
           <div class="form-grid">
@@ -4061,18 +4103,24 @@ async function loadPatients() {
   renderPatients(await res.json());
 }
 function renderPatients(patients) {
-  document.getElementById('patientsTable').innerHTML = patients.map(p => `
-    <tr style="cursor:pointer" onclick="selectPatientForInsurance('${p.patient_id}')">
+  document.getElementById('patientsTable').innerHTML = patients.map(p => {
+    var hasIns = (p.insurance_count || p.insurances && p.insurances.length) > 0;
+    var rowBg = hasIns ? '' : 'background:#fff3e0;border-left:4px solid #ff9800;';
+    var insBadge = hasIns
+      ? '<span style="background:#e8f5e9;color:#2e7d32;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:bold">INS OK (' + (p.insurance_count || 0) + ')</span>'
+      : '<span style="background:#ffe0b2;color:#e65100;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:bold">NO INS</span>';
+    return `
+    <tr style="cursor:pointer;${rowBg}" onclick="selectPatientForInsurance('${p.patient_id}')">
       <td>${p.mrn}</td><td>${p.patient_id}</td><td>${p.first_name} ${p.last_name}</td>
       <td>${p.dob}</td><td>${p.ssn || '-'}</td><td>${p.phone || '-'}</td>
-      <td><span class="status-badge status-${p.status}">${p.status}</span></td>
+      <td><span class="status-badge status-${p.status}">${p.status}</span> ${insBadge}</td>
       <td>
         <button class="btn btn-sm btn-success" onclick="event.stopPropagation();selectPatientForInsurance('${p.patient_id}')">Select</button>
         <button class="btn btn-sm btn-info" onclick="event.stopPropagation();viewPatient('${p.patient_id}')">View</button>
         <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deletePatient('${p.patient_id}')">Del</button>
       </td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
 }
 
 function selectPatientForInsurance(patientId) {
@@ -4217,6 +4265,8 @@ async function insMgrLoadPatient() {
   document.getElementById('insMgrSubDob').value = p.dob || '';
   insMgrRenderList(p.insurances || []);
   document.getElementById('insMgrDepAddBtn').style.display = 'inline-block';
+  document.getElementById('insMgrAddInsBtn').style.display = 'inline-block';
+  document.getElementById('insMgrAddInsForm').style.display = 'none';
 }
 
 function insMgrRenderList(insurances) {
@@ -4308,6 +4358,48 @@ async function insMgrReorder(insId, direction) {
   if (data.error) { showToast(data.error, 'error'); return; }
   showToast('Insurance priority updated');
   insMgrLoadPatient();
+}
+
+function insMgrShowAddInsurance() {
+  document.getElementById('insMgrAddInsForm').style.display = 'block';
+  document.getElementById('insMgrAddInsBtn').style.display = 'none';
+  document.getElementById('insAddPayer1').focus();
+}
+
+function insMgrClearAddForm() {
+  ['insAddPayer1','insAddMemberId1','insAddGroup1','insAddSubscriber1','insAddCopay1','insAddDeductible1','insAddEffDate1',
+   'insAddPayer2','insAddMemberId2','insAddGroup2','insAddSubscriber2','insAddCopay2','insAddDeductible2','insAddEffDate2'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
+}
+
+async function insMgrSaveBothInsurances() {
+  var pid = document.getElementById('insMgrPid').value.trim();
+  if (!pid) { showToast('Enter Patient ID first', 'error'); return; }
+  var p1Payer = document.getElementById('insAddPayer1').value.trim();
+  var p1Member = document.getElementById('insAddMemberId1').value.trim();
+  if (!p1Payer || !p1Member) { showToast('Primary: Payer Name and Member ID are required', 'error'); return; }
+  var results = [];
+  var body1 = { insurance_type:'primary', payer_name:p1Payer, member_id:p1Member, group_number:document.getElementById('insAddGroup1').value.trim(), plan_type:document.getElementById('insAddPlanType1').value, plan_name:document.getElementById('insAddPlanType1').value, subscriber_name:document.getElementById('insAddSubscriber1').value.trim(), subscriber_relationship:document.getElementById('insAddRelation1').value, effective_date:document.getElementById('insAddEffDate1').value, copay:parseFloat(document.getElementById('insAddCopay1').value)||0, deductible:parseFloat(document.getElementById('insAddDeductible1').value)||0, status:'active' };
+  var r1 = await fetch(API+'/api/patients/'+pid+'/insurance/link', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body1) });
+  var d1 = await r1.json();
+  if (d1.error) { showToast('Primary save error: '+d1.error,'error'); return; }
+  results.push('Primary');
+  var p2Payer = document.getElementById('insAddPayer2').value.trim();
+  var p2Member = document.getElementById('insAddMemberId2').value.trim();
+  if (p2Payer && p2Member) {
+    var body2 = { insurance_type:'secondary', payer_name:p2Payer, member_id:p2Member, group_number:document.getElementById('insAddGroup2').value.trim(), plan_type:document.getElementById('insAddPlanType2').value, plan_name:document.getElementById('insAddPlanType2').value, subscriber_name:document.getElementById('insAddSubscriber2').value.trim(), subscriber_relationship:document.getElementById('insAddRelation2').value, effective_date:document.getElementById('insAddEffDate2').value, copay:parseFloat(document.getElementById('insAddCopay2').value)||0, deductible:parseFloat(document.getElementById('insAddDeductible2').value)||0, status:'active' };
+    var r2 = await fetch(API+'/api/patients/'+pid+'/insurance/link', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body2) });
+    var d2 = await r2.json();
+    if (d2.error) { showToast('Secondary save error: '+d2.error,'error'); return; }
+    results.push('Secondary');
+  }
+  showToast(results.join(' + ')+' Insurance saved!');
+  insMgrClearAddForm();
+  document.getElementById('insMgrAddInsForm').style.display='none';
+  document.getElementById('insMgrAddInsBtn').style.display='inline-block';
+  insMgrLoadPatient();
+  if (typeof loadPatients === 'function') loadPatients();
 }
 
 function insMgrShowDepForm() {
@@ -6780,6 +6872,14 @@ async function chgSearchPatient() {
       }
       html += '</span></div>';
       html += '<div style="font-size:11px">Member ID: <b>' + (i.member_id || '-') + '</b> | Copay: $' + (i.copay || 0) + ' | Deductible: $' + (i.deductible || 0) + '</div>';
+      html += '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">';
+      if (i.member_id) {
+        html += '<button class="btn btn-sm btn-success" onclick="copyMemberAndVerify(\'' + (i.member_id || '') + '\')">&#128203; Copy Member ID & Verify Eligibility</button>';
+      }
+      if (i.card_image_front || i.card_image_back) {
+        html += '<button class="btn btn-sm btn-info" onclick="showInsuranceCard(\'' + (i.payer_name || '') + '\',\'' + (i.card_image_front || '') + '\',\'' + (i.card_image_back || '') + '\')">&#128179; View Insurance Card</button>';
+      }
+      html += '</div>';
       html += '<div style="display:flex;gap:10px;margin-top:6px">';
       if (i.card_image_front) {
         html += '<img src="' + i.card_image_front + '" style="max-width:250px;max-height:150px;border:1px solid #ccc;border-radius:4px;cursor:pointer" onclick="window.open(this.src)" title="Insurance Card Front">';
@@ -6788,7 +6888,7 @@ async function chgSearchPatient() {
         html += '<img src="' + i.card_image_back + '" style="max-width:250px;max-height:150px;border:1px solid #ccc;border-radius:4px;cursor:pointer" onclick="window.open(this.src)" title="Insurance Card Back">';
       }
       if (!i.card_image_front && !i.card_image_back) {
-        html += '<div style="color:#999;font-size:11px">Card images uploaded by Payer will appear here</div>';
+        html += '<div style="color:#999;font-size:11px">No card images uploaded yet</div>';
       }
       html += '</div></div>';
     });
@@ -6799,7 +6899,9 @@ async function chgSearchPatient() {
     html += '<div style="margin-top:8px"><b>Charges (' + charges.length + '):</b></div>';
     html += '<table><thead><tr><th>Charge ID</th><th>Date</th><th>Total</th><th>Paid</th><th>Status</th></tr></thead><tbody>';
     charges.forEach(c => {
-      html += '<tr><td>' + c.charge_id + '</td><td>' + c.charge_date + '</td><td>$' + c.total_charges.toFixed(2) + '</td><td>$' + c.total_paid.toFixed(2) + '</td><td><span class="status-badge status-' + c.status + '">' + c.status + '</span></td></tr>';
+      var ct = c.total_charges || c.billed_amount || 0; var cp = c.total_paid || c.paid_amount || 0;
+      if (typeof ct !== 'number') ct = 0; if (typeof cp !== 'number') cp = 0;
+      html += '<tr><td>' + c.charge_id + '</td><td>' + (c.charge_date || '-') + '</td><td>$' + ct.toFixed(2) + '</td><td>$' + cp.toFixed(2) + '</td><td><span class="status-badge status-' + c.status + '">' + (c.status || '-') + '</span></td></tr>';
     });
     html += '</tbody></table>';
   }
@@ -6812,6 +6914,28 @@ async function chgSearchPatient() {
       depSel.innerHTML += '<option value="' + dd.dependent_id + '">' + dd.first_name + ' ' + dd.last_name + ' (' + dd.relationship + ') - DOB: ' + (dd.dob || '-') + '</option>';
     });
   }
+}
+
+function copyMemberAndVerify(memberId) {
+  document.getElementById('eligMemberId').value = memberId;
+  if (navigator.clipboard) { navigator.clipboard.writeText(memberId); }
+  showToast('Member ID copied: ' + memberId);
+  verifyEligByMember();
+}
+
+function showInsuranceCard(payer, front, back) {
+  var html = '<div style="text-align:center;padding:16px">';
+  html += '<h3 style="margin-bottom:12px">' + payer + ' - Insurance Card</h3>';
+  if (front) html += '<div style="margin-bottom:12px"><b>Front:</b><br><img src="' + front + '" style="max-width:100%;max-height:300px;border:2px solid #4caf50;border-radius:8px;cursor:pointer" onclick="window.open(this.src)"></div>';
+  if (back) html += '<div><b>Back:</b><br><img src="' + back + '" style="max-width:100%;max-height:300px;border:2px solid #4caf50;border-radius:8px;cursor:pointer" onclick="window.open(this.src)"></div>';
+  if (!front && !back) html += '<div style="color:#999">No card images available</div>';
+  html += '</div>';
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = '<div style="background:#fff;border-radius:12px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;position:relative">' +
+    '<button onclick="this.parentElement.parentElement.remove()" style="position:absolute;top:8px;right:12px;background:none;border:none;font-size:24px;cursor:pointer;z-index:1">&times;</button>' + html + '</div>';
+  document.body.appendChild(overlay);
 }
 
 async function loadCharges() {
@@ -6828,12 +6952,16 @@ async function loadCharges() {
       actions += '<button class="btn btn-sm btn-warning" onclick="routeToRejectionTeamFromCharge(\'' + c.charge_id + '\')">Route to Rejection Team</button> ';
     }
     actions += '<button class="btn btn-sm btn-danger" onclick="deleteCharge(\'' + c.charge_id + '\')">Del</button>';
+    var total = c.total_charges || c.billed_amount || 0;
+    var paid = c.total_paid || c.paid_amount || 0;
+    if (typeof total !== 'number') total = 0;
+    if (typeof paid !== 'number') paid = 0;
     return '<tr>' +
-      '<td>' + c.charge_id + '</td><td>' + c.charge_date + '</td>' +
-      '<td>' + (c.patient_name || c.patient_id) + ' <small>(' + (c.mrn || '-') + ')</small></td>' +
-      '<td>' + (c.provider_name || c.provider_id) + '</td>' +
-      '<td>$' + c.total_charges.toFixed(2) + '</td><td>$' + c.total_paid.toFixed(2) + '</td>' +
-      '<td><span class="status-badge status-' + c.status + '">' + c.status + '</span></td>' +
+      '<td>' + c.charge_id + '</td><td>' + (c.charge_date || '-') + '</td>' +
+      '<td>' + (c.patient_name || c.patient_id || '-') + '</td>' +
+      '<td>' + (c.provider_name || c.provider_id || '-') + '</td>' +
+      '<td>$' + total.toFixed(2) + '</td><td>$' + paid.toFixed(2) + '</td>' +
+      '<td><span class="status-badge status-' + c.status + '">' + (c.status || 'pending') + '</span></td>' +
       '<td>' + actions + '</td></tr>';
   }).join('');
 }
@@ -7338,10 +7466,11 @@ async function saveCharge() {
   }
   const res = await fetch(API + '/api/charges', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
   const result = await res.json();
-  showToast('Charge created: ' + result.charge_id + ' | Total: $' + result.total_charges.toFixed(2));
+  const total = (result.total_charges || 0).toFixed ? (result.total_charges || 0).toFixed(2) : '0.00';
+  showToast('Charge created: ' + (result.charge_id || 'N/A') + ' | Total: $' + total);
   closeModal('modal-charge');
   loadCharges();
-  if (confirm('Charge ' + result.charge_id + ' created! Generate CMS-1500 now?')) {
+  if (confirm('Charge ' + (result.charge_id || '') + ' created! Generate CMS-1500 now?')) {
     generateAndPrintCMS1500(result.charge_id);
   }
 }
