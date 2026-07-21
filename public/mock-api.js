@@ -355,14 +355,6 @@
     if (path === '/api/eligibility/benefit-types') {
       return { data: ['Medical','Surgical','Prescription','Mental Health','Dental','Vision','Emergency','Lab','Imaging','Rehabilitation'] };
     }
-    if (path.match(/^\/api\/eligibility\/templates/)) {
-      if (method === 'GET') return { data: getStore('eligibility_templates') };
-      if (method === 'POST') { var tpls = getStore('eligibility_templates'); body.id=nextId('eligibility_templates'); tpls.push(body); setStore('eligibility_templates',tpls); return {data:body}; }
-      if ((m = path.match(/\/set\//))) return { data: {ok:true} };
-      if ((m = path.match(/\/copy$/))) return { data: {ok:true} };
-      if ((m = path.match(/\/(\d+)$/)) && method === 'PUT') return { data: {ok:true} };
-      if ((m = path.match(/\/(\d+)$/)) && method === 'DELETE') return { data: {ok:true} };
-    }
 
     // ===== CHARGES =====
     if (path === '/api/charges' && method === 'GET') {
@@ -403,6 +395,42 @@
     if (path === '/api/payments' && method === 'POST') {
       var pays = getStore('payments');
       body.id = nextId('payments');
+      pays.push(body);
+      setStore('payments', pays);
+      return { data: body };
+    }
+    if (path === '/api/payments/manual' && method === 'POST') {
+      var pays = getStore('payments');
+      body.id = nextId('payments');
+      body.status = 'posted';
+      body.payment_date = body.payment_date || new Date().toISOString().split('T')[0];
+      pays.push(body);
+      setStore('payments', pays);
+      return { data: body };
+    }
+    if (path === '/api/payments/post' && method === 'POST') {
+      var pays = getStore('payments');
+      body.id = nextId('payments');
+      body.status = 'posted';
+      pays.push(body);
+      setStore('payments', pays);
+      return { data: body };
+    }
+    if (path === '/api/payments/automatic' && method === 'POST') {
+      var pays = getStore('payments');
+      body.id = nextId('payments');
+      body.status = 'auto_posted';
+      pays.push(body);
+      setStore('payments', pays);
+      return { data: body };
+    }
+    if (path === '/api/payments/reconcile' && method === 'POST') {
+      return { data: {ok:true,reconciled:0,message:'Reconciliation complete'} };
+    }
+    if (path === '/api/payments/adjust' && method === 'POST') {
+      var pays = getStore('payments');
+      body.id = nextId('payments');
+      body.type = 'adjustment';
       pays.push(body);
       setStore('payments', pays);
       return { data: body };
@@ -448,10 +476,31 @@
     if (path === '/api/providers' && method === 'GET') {
       return { data: getStore('providers') };
     }
+    if (path === '/api/providers' && method === 'POST') {
+      var provs = getStore('providers');
+      body.id = nextId('providers');
+      body.provider_id = body.provider_id || 'PRV' + String(body.id).padStart(3,'0');
+      body.status = body.status || 'active';
+      provs.push(body);
+      setStore('providers', provs);
+      return { data: body };
+    }
     if ((m = path.match(/^\/api\/providers\/(\d+)$/))) {
       var pid = parseInt(m[1]);
-      var prov = getStore('providers').find(function(p){return p.id===pid;});
-      return prov ? { data: prov } : { status: 404, data: {error:'Not found'} };
+      if (method === 'GET') {
+        var prov = getStore('providers').find(function(p){return p.id===pid;});
+        return prov ? { data: prov } : { status: 404, data: {error:'Not found'} };
+      }
+      if (method === 'PUT') {
+        var provs = getStore('providers');
+        var idx = provs.findIndex(function(p){return p.id===pid;});
+        if (idx >= 0) { Object.assign(provs[idx], body); setStore('providers', provs); }
+        return { data: {ok:true} };
+      }
+      if (method === 'DELETE') {
+        setStore('providers', getStore('providers').filter(function(p){return p.id!==pid;}));
+        return { data: {ok:true} };
+      }
     }
 
     // ===== INSURANCES =====
@@ -476,6 +525,268 @@
     // ===== AR =====
     if (path === '/api/ar' && method === 'GET') {
       return { data: getStore('ar_records') };
+    }
+    if (path === '/api/ar/calls' && method === 'GET') {
+      return { data: getStore('ar_calls') || [] };
+    }
+    if (path === '/api/ar/calls' && method === 'POST') {
+      var calls = getStore('ar_calls');
+      body.id = nextId('ar_calls');
+      body.call_date = body.call_date || new Date().toISOString();
+      calls.push(body);
+      setStore('ar_calls', calls);
+      return { data: body };
+    }
+    if ((m = path.match(/^\/api\/ar\/calls\/(\d+)$/))) {
+      var callId = parseInt(m[1]);
+      if (method === 'PUT') {
+        var calls = getStore('ar_calls');
+        var idx = calls.findIndex(function(c){return c.id===callId;});
+        if (idx >= 0) { Object.assign(calls[idx], body); setStore('ar_calls', calls); }
+        return { data: {ok:true} };
+      }
+    }
+    if (path === '/api/ar/voicemail' && method === 'POST') {
+      var vms = getStore('ar_voicemail') || [];
+      body.id = nextId('ar_voicemail');
+      vms.push(body);
+      setStore('ar_voicemail', vms);
+      return { data: body };
+    }
+
+    // ===== AUTHORIZATIONS =====
+    if (path === '/api/authorizations' && method === 'GET') {
+      return { data: getStore('authorizations') || [] };
+    }
+    if (path === '/api/authorizations/submit' && method === 'POST') {
+      var auths = getStore('authorizations');
+      body.id = nextId('authorizations');
+      body.auth_id = body.auth_id || 'AUTH' + String(body.id).padStart(3,'0');
+      body.status = body.status || 'pending';
+      body.created_at = new Date().toISOString();
+      auths.push(body);
+      setStore('authorizations', auths);
+      return { data: body };
+    }
+    if (path === '/api/authorizations/retro-submit' && method === 'POST') {
+      var auths = getStore('authorizations');
+      body.id = nextId('authorizations');
+      body.auth_id = body.auth_id || 'AUTH' + String(body.id).padStart(3,'0');
+      body.status = 'retro_pending';
+      body.type = 'retrospective';
+      body.created_at = new Date().toISOString();
+      auths.push(body);
+      setStore('authorizations', auths);
+      return { data: body };
+    }
+    if ((m = path.match(/^\/api\/authorizations\/(\d+)\/(start-review|request-info|approve|deny|resubmit|hold|release)$/))) {
+      var authId = parseInt(m[1]);
+      var action = m[2];
+      var auths = getStore('authorizations');
+      var idx = auths.findIndex(function(a){return a.id===authId;});
+      if (idx >= 0) {
+        var statusMap = {start_review:'under_review',request_info:'info_requested',approve:'approved',deny:'denied',resubmit:'resubmitted',hold:'on_hold',release:'released'};
+        auths[idx].status = statusMap[action] || action;
+        setStore('authorizations', auths);
+      }
+      return { data: {ok:true} };
+    }
+    if ((m = path.match(/^\/api\/authorizations\/(\d+)\/(appeal|peer-review)$/))) {
+      return { data: {ok:true} };
+    }
+
+    // ===== REJECTIONS ACTIONS =====
+    if ((m = path.match(/^\/api\/rejections\/(\d+)\/action$/))) {
+      var rejId = parseInt(m[1]);
+      var rejs = getStore('rejections');
+      var idx = rejs.findIndex(function(r){return r.id===rejId;});
+      if (idx >= 0) { Object.assign(rejs[idx], body); setStore('rejections', rejs); }
+      return { data: {ok:true} };
+    }
+
+    // ===== APPEALS =====
+    if (path === '/api/appeals' && method === 'GET') {
+      return { data: getStore('appeals') || [] };
+    }
+    if (path === '/api/appeals' && method === 'POST') {
+      var appeals = getStore('appeals');
+      body.id = nextId('appeals');
+      body.status = body.status || 'draft';
+      body.created_at = new Date().toISOString();
+      appeals.push(body);
+      setStore('appeals', appeals);
+      return { data: body };
+    }
+    if ((m = path.match(/^\/api\/appeals\/(\d+)$/))) {
+      var aid = parseInt(m[1]);
+      if (method === 'PUT') {
+        var appeals = getStore('appeals');
+        var idx = appeals.findIndex(function(a){return a.id===aid;});
+        if (idx >= 0) { Object.assign(appeals[idx], body); setStore('appeals', appeals); }
+        return { data: {ok:true} };
+      }
+    }
+
+    // ===== INPATIENT / UB-04 =====
+    if (path === '/api/inpatient' && method === 'GET') {
+      return { data: getStore('inpatient') || [] };
+    }
+    if (path === '/api/inpatient' && method === 'POST') {
+      var ips = getStore('inpatient');
+      body.id = nextId('inpatient');
+      body.ip_id = body.ip_id || 'IP' + String(body.id).padStart(3,'0');
+      body.status = body.status || 'admitted';
+      body.created_at = new Date().toISOString();
+      ips.push(body);
+      setStore('inpatient', ips);
+      return { data: body };
+    }
+    if ((m = path.match(/^\/api\/inpatient\/(\d+)$/))) {
+      var ipId = parseInt(m[1]);
+      if (method === 'PUT') {
+        var ips = getStore('inpatient');
+        var idx = ips.findIndex(function(i){return i.id===ipId;});
+        if (idx >= 0) { Object.assign(ips[idx], body); setStore('inpatient', ips); }
+        return { data: {ok:true} };
+      }
+    }
+    if ((m = path.match(/^\/api\/inpatient\/(\d+)\/ub04$/))) {
+      var ipId = parseInt(m[1]);
+      var ips = getStore('inpatient');
+      var idx = ips.findIndex(function(i){return i.id===ipId;});
+      if (idx >= 0) { Object.assign(ips[idx], body); setStore('inpatient', ips); }
+      return { data: {ok:true} };
+    }
+
+    // ===== CORRECTED CLAIMS =====
+    if (path === '/api/corrected-claims' && method === 'GET') {
+      return { data: getStore('corrected_claims') || [] };
+    }
+    if (path === '/api/corrected-claims/submit' && method === 'POST') {
+      var cc = getStore('corrected_claims');
+      body.id = nextId('corrected_claims');
+      body.status = body.status || 'submitted';
+      body.created_at = new Date().toISOString();
+      cc.push(body);
+      setStore('corrected_claims', cc);
+      return { data: body };
+    }
+
+    // ===== ADJUDICATION =====
+    if (path === '/api/adjudication' && method === 'GET') {
+      return { data: getStore('adjudication') || [] };
+    }
+    if (path === '/api/adjudication' && method === 'POST') {
+      var adj = getStore('adjudication');
+      body.id = nextId('adjudication');
+      body.status = body.status || 'pending';
+      body.created_at = new Date().toISOString();
+      adj.push(body);
+      setStore('adjudication', adj);
+      return { data: body };
+    }
+
+    // ===== CMS-1500 =====
+    if (path === '/api/cms1500/save' && method === 'POST') {
+      var forms = getStore('cms1500_forms');
+      body.id = nextId('cms1500_forms');
+      body.created_at = new Date().toISOString();
+      forms.push(body);
+      setStore('cms1500_forms', forms);
+      return { data: {id:body.id,ok:true} };
+    }
+    if (path === '/api/cms1500') {
+      if (method === 'GET') return { data: getStore('cms1500_forms') || [] };
+    }
+
+    // ===== MEDICAL RECORDS =====
+    if (path === '/api/medical-records' && method === 'GET') {
+      return { data: getStore('medical_records') || [] };
+    }
+    if (path === '/api/medical-records/upload' && method === 'POST') {
+      var recs = getStore('medical_records');
+      body.id = nextId('medical_records');
+      body.uploaded_at = new Date().toISOString();
+      recs.push(body);
+      setStore('medical_records', recs);
+      return { data: body };
+    }
+    if ((m = path.match(/^\/api\/medical-records\/(\d+)$/))) {
+      var rid = parseInt(m[1]);
+      if (method === 'PUT') {
+        var recs = getStore('medical_records');
+        var idx = recs.findIndex(function(r){return r.id===rid;});
+        if (idx >= 0) { Object.assign(recs[idx], body); setStore('medical_records', recs); }
+        return { data: {ok:true} };
+      }
+      if (method === 'DELETE') {
+        setStore('medical_records', getStore('medical_records').filter(function(r){return r.id!==rid;}));
+        return { data: {ok:true} };
+      }
+    }
+
+    // ===== OFFSET TRACKING =====
+    if (path === '/api/offset-tracking' && method === 'GET') {
+      return { data: getStore('offset_tracking') || [] };
+    }
+    if (path === '/api/offset-tracking' && method === 'POST') {
+      var offs = getStore('offset_tracking');
+      body.id = nextId('offset_tracking');
+      body.created_at = new Date().toISOString();
+      offs.push(body);
+      setStore('offset_tracking', offs);
+      return { data: body };
+    }
+
+    // ===== DOCUMENTS =====
+    if (path === '/api/documents/save' && method === 'POST') {
+      var docs = getStore('documents');
+      body.id = nextId('documents');
+      body.saved_at = new Date().toISOString();
+      docs.push(body);
+      setStore('documents', docs);
+      return { data: {id:body.id,ok:true} };
+    }
+    if (path.match(/^\/api\/documents\//)) {
+      return { data: getStore('documents') || [] };
+    }
+
+    // ===== ELIGIBILITY EXTRAS =====
+    if (path === '/api/eligibility/templates' && method === 'GET') {
+      return { data: getStore('eligibility_templates') || [] };
+    }
+    if (path === '/api/eligibility/templates' && method === 'POST') {
+      var tpls = getStore('eligibility_templates');
+      body.id = nextId('eligibility_templates');
+      tpls.push(body);
+      setStore('eligibility_templates', tpls);
+      return { data: body };
+    }
+    if (path === '/api/eligibility/templates/copy' && method === 'POST') {
+      var tpls = getStore('eligibility_templates');
+      body.id = nextId('eligibility_templates');
+      tpls.push(body);
+      setStore('eligibility_templates', tpls);
+      return { data: body };
+    }
+    if ((m = path.match(/^\/api\/eligibility\/templates\/(\d+)$/))) {
+      var tid = parseInt(m[1]);
+      if (method === 'PUT') {
+        var tpls = getStore('eligibility_templates');
+        var idx = tpls.findIndex(function(t){return t.id===tid;});
+        if (idx >= 0) { Object.assign(tpls[idx], body); setStore('eligibility_templates', tpls); }
+        return { data: {ok:true} };
+      }
+      if (method === 'DELETE') {
+        setStore('eligibility_templates', getStore('eligibility_templates').filter(function(t){return t.id!==tid;}));
+        return { data: {ok:true} };
+      }
+    }
+    if (path.match(/^\/api\/eligibility\/templates\/\d+\/set\//)) {
+      return { data: {ok:true} };
+    }
+    if (path === '/api/eligibility/payer/create-card' && method === 'POST') {
+      return { data: {ok:true} };
     }
 
     // ===== REPORTS =====
@@ -729,7 +1040,13 @@
       return { data: {ok:true,id:body.id,adminWhatsApp:'https://wa.me/918309456545',studentWhatsApp:'https://wa.me/91'+(body.phone||'')} };
     }
 
-    // ===== Fallback =====
+    // ===== Fallback - handle any unmatched POST/PUT/DELETE gracefully =====
+    if (method === 'POST' || method === 'PUT') {
+      return { data: {id:nextId('_fallback'),ok:true,message:'Saved successfully'} };
+    }
+    if (method === 'DELETE') {
+      return { data: {ok:true,message:'Deleted successfully'} };
+    }
     return { data: [] };
   }
 
