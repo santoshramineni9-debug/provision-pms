@@ -23,6 +23,13 @@
     if (items.length === 0) return 1;
     return Math.max.apply(null, items.map(function(i){ return i.id || 0; })) + 1;
   }
+  function findPatientById(idStr) {
+    var patients = getStore('patients');
+    var numId = parseInt(idStr);
+    return patients.find(function(p) {
+      return p.patient_id === idStr || p.id === numId || p.id === idStr || p.mrn === idStr;
+    });
+  }
 
   // Seed demo data on first load
   function seedData() {
@@ -37,14 +44,14 @@
     setStore('patients', patients);
 
     var insurances = [
-      {id:1,patient_id:1,payer_name:'Aetna',policy_number:'AET-332190',member_id:'AET-M001',group_number:'GRP-5521',subscriber_name:'John Smith',relationship:'Self',plan_type:'PPO',copay:30,deductible:500,coinsurance:20,insurance_type:'primary',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active',effective_status:'active'},
-      {id:2,patient_id:2,payer_name:'Blue Cross Blue Shield',policy_number:'BCBS-784521',member_id:'BCBS-M002',group_number:'GRP-3344',subscriber_name:'Maria Garcia',relationship:'Self',plan_type:'HMO',copay:25,deductible:300,coinsurance:15,insurance_type:'primary',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active',effective_status:'active'},
-      {id:3,patient_id:3,payer_name:'UnitedHealthcare',policy_number:'UHC-991234',member_id:'UHC-M003',group_number:'GRP-7788',subscriber_name:'Robert Johnson',relationship:'Self',plan_type:'PPO',copay:35,deductible:750,coinsurance:25,insurance_type:'primary',effective_date:'2026-03-01',termination_date:'2027-02-28',status:'active',effective_status:'active'},
-      {id:4,patient_id:4,payer_name:'Cigna',policy_number:'CIG-445678',member_id:'CIG-M004',group_number:'GRP-2211',subscriber_name:'Sarah Williams',relationship:'Self',plan_type:'EPO',copay:20,deductible:400,coinsurance:10,insurance_type:'primary',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active',effective_status:'active'},
-      {id:5,patient_id:5,payer_name:'Aetna',policy_number:'AET-556789',member_id:'AET-M005',group_number:'GRP-5521',subscriber_name:'David Brown',relationship:'Self',plan_type:'POS',copay:40,deductible:600,coinsurance:30,insurance_type:'primary',effective_date:'2026-02-01',termination_date:'2027-01-31',status:'active',effective_status:'active'},
-      {id:6,patient_id:1,payer_name:'Blue Cross Blue Shield',policy_number:'BCBS-S001',member_id:'BCBS-S006',group_number:'GRP-8888',subscriber_name:'John Smith',relationship:'Self',plan_type:'HMO',copay:20,deductible:250,coinsurance:10,insurance_type:'secondary',effective_date:'2025-01-01',termination_date:'2025-12-31',status:'active',effective_status:'expired'},
-      {id:7,patient_id:1,payer_name:'Cigna',policy_number:'CIG-S001',member_id:'CIG-S007',group_number:'GRP-9999',subscriber_name:'John Smith',relationship:'Self',plan_type:'PPO',copay:15,deductible:200,coinsurance:10,insurance_type:'secondary',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active',effective_status:'active'},
-      {id:8,patient_id:3,payer_name:'Blue Cross Blue Shield',policy_number:'BCBS-S003',member_id:'BCBS-S008',group_number:'GRP-4444',subscriber_name:'Robert Johnson',relationship:'Self',plan_type:'HMO',copay:20,deductible:250,coinsurance:10,insurance_type:'secondary',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active',effective_status:'active'}
+      {id:1,patient_id:1,payer_name:'Aetna',policy_number:'AET-332190',member_id:'AET-M001',group_number:'GRP-5521',subscriber_name:'John Smith',relationship:'Self',plan_type:'PPO',copay:30,deductible:500,coinsurance:20,insurance_type:'primary',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active',effective_status:'active',eligibility_status:'active'},
+      {id:2,patient_id:2,payer_name:'Blue Cross Blue Shield',policy_number:'BCBS-784521',member_id:'BCBS-M002',group_number:'GRP-3344',subscriber_name:'Maria Garcia',relationship:'Self',plan_type:'HMO',copay:25,deductible:300,coinsurance:15,insurance_type:'primary',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active',effective_status:'active',eligibility_status:'active'},
+      {id:3,patient_id:3,payer_name:'UnitedHealthcare',policy_number:'UHC-991234',member_id:'UHC-M003',group_number:'GRP-7788',subscriber_name:'Robert Johnson',relationship:'Self',plan_type:'PPO',copay:35,deductible:750,coinsurance:25,insurance_type:'primary',effective_date:'2026-03-01',termination_date:'2027-02-28',status:'active',effective_status:'active',eligibility_status:'active'},
+      {id:4,patient_id:4,payer_name:'Cigna',policy_number:'CIG-445678',member_id:'CIG-M004',group_number:'GRP-2211',subscriber_name:'Sarah Williams',relationship:'Self',plan_type:'EPO',copay:20,deductible:400,coinsurance:10,insurance_type:'primary',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active',effective_status:'active',eligibility_status:'active'},
+      {id:5,patient_id:5,payer_name:'Aetna',policy_number:'AET-556789',member_id:'AET-M005',group_number:'GRP-5521',subscriber_name:'David Brown',relationship:'Self',plan_type:'POS',copay:40,deductible:600,coinsurance:30,insurance_type:'primary',effective_date:'2026-02-01',termination_date:'2027-01-31',status:'active',effective_status:'active',eligibility_status:'active'},
+      {id:6,patient_id:1,payer_name:'Blue Cross Blue Shield',policy_number:'BCBS-S001',member_id:'BCBS-S006',group_number:'GRP-8888',subscriber_name:'John Smith',relationship:'Self',plan_type:'HMO',copay:20,deductible:250,coinsurance:10,insurance_type:'secondary',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active',effective_status:'active',eligibility_status:'active'},
+      {id:7,patient_id:1,payer_name:'Cigna',policy_number:'CIG-S001',member_id:'CIG-S007',group_number:'GRP-9999',subscriber_name:'John Smith',relationship:'Self',plan_type:'PPO',copay:15,deductible:200,coinsurance:10,insurance_type:'secondary',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active',effective_status:'active',eligibility_status:'active'},
+      {id:8,patient_id:3,payer_name:'Blue Cross Blue Shield',policy_number:'BCBS-S003',member_id:'BCBS-S008',group_number:'GRP-4444',subscriber_name:'Robert Johnson',relationship:'Self',plan_type:'HMO',copay:20,deductible:250,coinsurance:10,insurance_type:'secondary',effective_date:'2026-01-01',termination_date:'2026-12-31',status:'active',effective_status:'active',eligibility_status:'active'}
     ];
     setStore('insurances', insurances);
 
@@ -111,6 +118,36 @@
     var coding_audit_log = [];
     setStore('coding_audit_log', coding_audit_log);
 
+    var eligibility_templates = [
+      {id:1,template_name:'Standard PPO',benefits:JSON.stringify([
+        {benefit_name:'Office Visit - Primary Care',covered:true,copay_amount:30,deductible_amount:0,coinsurance_percent:20,max_visits:52,prior_auth_required:0},
+        {benefit_name:'Office Visit - Specialist',covered:true,copay_amount:50,deductible_amount:0,coinsurance_percent:30,max_visits:26,prior_auth_required:1},
+        {benefit_name:'Urgent Care',covered:true,copay_amount:75,deductible_amount:100,coinsurance_percent:20,max_visits:10,prior_auth_required:0},
+        {benefit_name:'Emergency Room',covered:true,copay_amount:250,deductible_amount:500,coinsurance_percent:20,max_visits:4,prior_auth_required:0},
+        {benefit_name:'Inpatient Hospital',covered:true,copay_amount:0,deductible_amount:1000,coinsurance_percent:20,max_visits:3,prior_auth_required:1},
+        {benefit_name:'Outpatient Surgery',covered:true,copay_amount:100,deductible_amount:500,coinsurance_percent:20,max_visits:5,prior_auth_required:1},
+        {benefit_name:'Lab / Diagnostics',covered:true,copay_amount:20,deductible_amount:0,coinsurance_percent:10,max_visits:20,prior_auth_required:0},
+        {benefit_name:'Radiology / Imaging',covered:true,copay_amount:50,deductible_amount:200,coinsurance_percent:20,max_visits:10,prior_auth_required:1},
+        {benefit_name:'Physical Therapy',covered:true,copay_amount:40,deductible_amount:0,coinsurance_percent:20,max_visits:30,prior_auth_required:1},
+        {benefit_name:'Prescription - Generic',covered:true,copay_amount:15,deductible_amount:0,coinsurance_percent:0,max_visits:999,prior_auth_required:0},
+        {benefit_name:'Prescription - Brand',covered:true,copay_amount:40,deductible_amount:0,coinsurance_percent:30,max_visits:999,prior_auth_required:0},
+        {benefit_name:'Mental Health',covered:true,copay_amount:40,deductible_amount:200,coinsurance_percent:20,max_visits:20,prior_auth_required:1},
+        {benefit_name:'Preventive Care',covered:true,copay_amount:0,deductible_amount:0,coinsurance_percent:0,max_visits:1,prior_auth_required:0},
+        {benefit_name:'Durable Medical Equipment',covered:true,copay_amount:0,deductible_amount:200,coinsurance_percent:40,max_visits:2,prior_auth_required:1}
+      ]),status:'active',created_at:'2026-01-01'},
+      {id:2,template_name:'Standard HMO',benefits:JSON.stringify([
+        {benefit_name:'Office Visit - PCP',covered:true,copay_amount:25,deductible_amount:0,coinsurance_percent:15,max_visits:52,prior_auth_required:0},
+        {benefit_name:'Office Visit - Specialist',covered:true,copay_amount:45,deductible_amount:0,coinsurance_percent:25,max_visits:20,prior_auth_required:1},
+        {benefit_name:'Urgent Care',covered:true,copay_amount:50,deductible_amount:75,coinsurance_percent:15,max_visits:8,prior_auth_required:0},
+        {benefit_name:'Emergency Room',covered:true,copay_amount:200,deductible_amount:300,coinsurance_percent:15,max_visits:4,prior_auth_required:0},
+        {benefit_name:'Inpatient Hospital',covered:true,copay_amount:0,deductible_amount:750,coinsurance_percent:15,max_visits:3,prior_auth_required:1},
+        {benefit_name:'Lab / Diagnostics',covered:true,copay_amount:15,deductible_amount:0,coinsurance_percent:10,max_visits:15,prior_auth_required:0},
+        {benefit_name:'Radiology / Imaging',covered:true,copay_amount:40,deductible_amount:150,coinsurance_percent:15,max_visits:8,prior_auth_required:1},
+        {benefit_name:'Preventive Care',covered:true,copay_amount:0,deductible_amount:0,coinsurance_percent:0,max_visits:1,prior_auth_required:0}
+      ]),status:'active',created_at:'2026-01-01'}
+    ];
+    setStore('eligibility_templates', eligibility_templates);
+
     setConfig({
       courses: [
         {id:1,name:'AR Calling (Accounts Receivable)',batch:'Jul 2026',status:'New',duration:'45 Days',fee:'15000',visible:true},
@@ -126,6 +163,41 @@
     localStorage.setItem(DB_PREFIX + '_seeded', '1');
   }
   seedData();
+
+  // Ensure templates always exist (even for existing users)
+  (function() {
+    var tpls = getStore('eligibility_templates');
+    if (!tpls || tpls.length === 0) {
+      setStore('eligibility_templates', [
+        {id:1,template_name:'Standard PPO',benefits:JSON.stringify([
+          {benefit_name:'Office Visit - Primary Care',covered:true,copay_amount:30,deductible_amount:0,coinsurance_percent:20,max_visits:52,prior_auth_required:0},
+          {benefit_name:'Office Visit - Specialist',covered:true,copay_amount:50,deductible_amount:0,coinsurance_percent:30,max_visits:26,prior_auth_required:1},
+          {benefit_name:'Urgent Care',covered:true,copay_amount:75,deductible_amount:100,coinsurance_percent:20,max_visits:10,prior_auth_required:0},
+          {benefit_name:'Emergency Room',covered:true,copay_amount:250,deductible_amount:500,coinsurance_percent:20,max_visits:4,prior_auth_required:0},
+          {benefit_name:'Inpatient Hospital',covered:true,copay_amount:0,deductible_amount:1000,coinsurance_percent:20,max_visits:3,prior_auth_required:1},
+          {benefit_name:'Outpatient Surgery',covered:true,copay_amount:100,deductible_amount:500,coinsurance_percent:20,max_visits:5,prior_auth_required:1},
+          {benefit_name:'Lab / Diagnostics',covered:true,copay_amount:20,deductible_amount:0,coinsurance_percent:10,max_visits:20,prior_auth_required:0},
+          {benefit_name:'Radiology / Imaging',covered:true,copay_amount:50,deductible_amount:200,coinsurance_percent:20,max_visits:10,prior_auth_required:1},
+          {benefit_name:'Physical Therapy',covered:true,copay_amount:40,deductible_amount:0,coinsurance_percent:20,max_visits:30,prior_auth_required:1},
+          {benefit_name:'Prescription - Generic',covered:true,copay_amount:15,deductible_amount:0,coinsurance_percent:0,max_visits:999,prior_auth_required:0},
+          {benefit_name:'Prescription - Brand',covered:true,copay_amount:40,deductible_amount:0,coinsurance_percent:30,max_visits:999,prior_auth_required:0},
+          {benefit_name:'Mental Health',covered:true,copay_amount:40,deductible_amount:200,coinsurance_percent:20,max_visits:20,prior_auth_required:1},
+          {benefit_name:'Preventive Care',covered:true,copay_amount:0,deductible_amount:0,coinsurance_percent:0,max_visits:1,prior_auth_required:0},
+          {benefit_name:'Durable Medical Equipment',covered:true,copay_amount:0,deductible_amount:200,coinsurance_percent:40,max_visits:2,prior_auth_required:1}
+        ]),status:'active',created_at:'2026-01-01'},
+        {id:2,template_name:'Standard HMO',benefits:JSON.stringify([
+          {benefit_name:'Office Visit - PCP',covered:true,copay_amount:25,deductible_amount:0,coinsurance_percent:15,max_visits:52,prior_auth_required:0},
+          {benefit_name:'Office Visit - Specialist',covered:true,copay_amount:45,deductible_amount:0,coinsurance_percent:25,max_visits:20,prior_auth_required:1},
+          {benefit_name:'Urgent Care',covered:true,copay_amount:50,deductible_amount:75,coinsurance_percent:15,max_visits:8,prior_auth_required:0},
+          {benefit_name:'Emergency Room',covered:true,copay_amount:200,deductible_amount:300,coinsurance_percent:15,max_visits:4,prior_auth_required:0},
+          {benefit_name:'Inpatient Hospital',covered:true,copay_amount:0,deductible_amount:750,coinsurance_percent:15,max_visits:3,prior_auth_required:1},
+          {benefit_name:'Lab / Diagnostics',covered:true,copay_amount:15,deductible_amount:0,coinsurance_percent:10,max_visits:15,prior_auth_required:0},
+          {benefit_name:'Radiology / Imaging',covered:true,copay_amount:40,deductible_amount:150,coinsurance_percent:15,max_visits:8,prior_auth_required:1},
+          {benefit_name:'Preventive Care',covered:true,copay_amount:0,deductible_amount:0,coinsurance_percent:0,max_visits:1,prior_auth_required:0}
+        ]),status:'active',created_at:'2026-01-01'}
+      ]);
+    }
+  })();
 
   // ===== GENERIC CRUD ROUTER =====
   var originalFetch = window.fetch;
@@ -265,6 +337,12 @@
       return { data: recent };
     }
     if (path === '/api/patients/search' || path.indexOf('/api/patients/search?') === 0) {
+      var q2 = (q.q || q.search || '').toLowerCase();
+      var patients = getStore('patients').filter(function(p) {
+        return !q2 || (p.patient_id||'').toLowerCase().indexOf(q2) >= 0 || (p.mrn||'').toLowerCase().indexOf(q2) >= 0 || (p.first_name||'').toLowerCase().indexOf(q2) >= 0 || (p.last_name||'').toLowerCase().indexOf(q2) >= 0 || (p.phone||'').toLowerCase().indexOf(q2) >= 0 || (p.dob||'').toLowerCase().indexOf(q2) >= 0 || (p.ssn||'').toLowerCase().indexOf(q2) >= 0 || (p.email||'').toLowerCase().indexOf(q2) >= 0;
+      });
+      return { data: patients };
+    }
     if (path === '/api/patients' && method === 'POST') {
       var patients = getStore('patients');
       body.id = nextId('patients');
@@ -283,58 +361,90 @@
       });
       return { data: patients };
     }
-    if ((m = path.match(/^\/api\/patients\/(\d+)\/360$/))) {
-      var pid = parseInt(m[1]);
-      var patient = getStore('patients').find(function(p){return p.id===pid;});
+    if ((m = path.match(/^\/api\/patients\/([^\/]+)\/360$/))) {
+      var patient = findPatientById(m[1]);
       if (!patient) return { status: 404, data: {error:'Not found'} };
-      var ins = getStore('insurances').filter(function(i){return i.patient_id===pid;});
-      var chg = getStore('charges').filter(function(c){return c.patient_id===pid;});
-      var appts = getStore('appointments').filter(function(a){return a.patient_id===pid;});
-      return { data: Object.assign({}, patient, {insurances:ins,charges:chg,appointments:appts}) };
+      var ins = getStore('insurances').filter(function(i){return i.patient_id===patient.id;});
+      var chg = getStore('charges').filter(function(c){return c.patient_id===patient.id;});
+      var appts = getStore('appointments').filter(function(a){return a.patient_id===patient.id;});
+      var payms = getStore('payments').filter(function(p){return p.patient_id===patient.id;});
+      var rej = getStore('rejections').filter(function(r){return r.patient_id===patient.id;});
+      var totalPaid = 0, totalBilled = 0;
+      chg.forEach(function(c){ totalBilled += (c.billed_amount||c.total_charges||0); totalPaid += (c.paid_amount||c.total_paid||0); });
+      return { data: {
+        patient: patient,
+        insurances: ins,
+        charges: chg,
+        appointments: appts,
+        payments: payms,
+        rejections: rej,
+        dependents: getStore('dependents').filter(function(d){return d.patient_id===patient.id;}),
+        authorizations: [],
+        arCalls: [],
+        offsets: [],
+        medicalRecords: [],
+        summary: {
+          totalPaid: totalPaid,
+          totalCharges: totalBilled,
+          totalBalance: totalBilled - totalPaid,
+          totalChargesCount: chg.length,
+          totalPaymentsCount: payms.length,
+          totalAppointments: appts.length,
+          activeAuths: 0,
+          openRejections: rej.length
+        }
+      } };
     }
-    if ((m = path.match(/^\/api\/patients\/(\d+)\/insurance\/(\d+)\/card$/))) {
+    if ((m = path.match(/^\/api\/patients\/([^\/]+)\/insurance\/(\d+)\/card$/))) {
       return { data: {ok:true} };
     }
-    if ((m = path.match(/^\/api\/patients\/(\d+)\/dependents$/))) {
+    if ((m = path.match(/^\/api\/patients\/([^\/]+)\/dependents$/))) {
       if (method === 'POST') {
         return { data: {id:nextId('dependents'),ok:true} };
       }
       return { data: [] };
     }
-    if ((m = path.match(/^\/api\/patients\/(\d+)\/dependents\/(\d+)$/)) && method === 'DELETE') {
+    if ((m = path.match(/^\/api\/patients\/([^\/]+)\/dependents\/(\d+)$/)) && method === 'DELETE') {
       return { data: {ok:true} };
     }
-    if ((m = path.match(/^\/api\/patients\/(\d+)\/insurance\/link$/))) {
-      var linkPid = parseInt(m[1]);
+    if ((m = path.match(/^\/api\/patients\/([^\/]+)\/insurance\/link$/))) {
+      var linkPatient = findPatientById(m[1]);
+      var linkPid = linkPatient ? linkPatient.id : m[1];
       var ins = getStore('insurances');
       var newIns = Object.assign({}, body, { patient_id: linkPid, id: nextId('insurances'), created_at: new Date().toISOString() });
       ins.push(newIns);
       setStore('insurances', ins);
       return { data: {ok:true,insurance:newIns} };
     }
-    if ((m = path.match(/^\/api\/patients\/(\d+)\/insurance\/reorder$/))) {
+    if ((m = path.match(/^\/api\/patients\/([^\/]+)\/insurance\/reorder$/))) {
       return { data: {ok:true} };
     }
     if (path.match(/^\/api\/patients\/insurance\/lookup\//)) {
       return { data: {found:false} };
     }
-    if ((m = path.match(/^\/api\/patients\/(\d+)$/))) {
+    if ((m = path.match(/^\/api\/patients\/([^\/]+)$/))) {
       var pid = parseInt(m[1]);
       if (method === 'GET') {
-        var patient = getStore('patients').find(function(p){return p.id===pid;});
+        var patient = findPatientById(m[1]);
         if (!patient) return { status: 404, data: {error:'Not found'} };
-        var linkedIns = getStore('insurances').filter(function(i){return i.patient_id===pid;});
-        var dependents = getStore('dependents').filter(function(d){return d.patient_id===pid;});
+        var linkedIns = getStore('insurances').filter(function(i){return i.patient_id===patient.id;});
+        var dependents = getStore('dependents').filter(function(d){return d.patient_id===patient.id;});
         return { data: Object.assign({}, patient, {insurances: linkedIns, dependents: dependents}) };
       }
       if (method === 'PUT') {
         var patients = getStore('patients');
-        var idx = patients.findIndex(function(p){return p.id===pid;});
-        if (idx >= 0) { Object.assign(patients[idx], body); setStore('patients', patients); }
+        var patient = findPatientById(m[1]);
+        if (patient) {
+          var idx = patients.findIndex(function(p){return p.id===patient.id;});
+          if (idx >= 0) { Object.assign(patients[idx], body); setStore('patients', patients); }
+        }
         return { data: {ok:true} };
       }
       if (method === 'DELETE') {
-        setStore('patients', getStore('patients').filter(function(p){return p.id!==pid;}));
+        var patient = findPatientById(m[1]);
+        if (patient) {
+          setStore('patients', getStore('patients').filter(function(p){return p.id!==patient.id;}));
+        }
         return { data: {ok:true} };
       }
     }
@@ -362,12 +472,19 @@
       var memberId = decodeURIComponent(m[1]).trim();
       var allIns = getStore('insurances');
       var allPatients = getStore('patients');
+      var payerCards = getStore('payer_cards');
       var ins = allIns.find(function(i){ return (i.member_id||'').toLowerCase()===memberId.toLowerCase() || (i.policy_number||'').toLowerCase()===memberId.toLowerCase(); });
-      if (!ins) return { data: {verified:false,error:'Member not found for ID: ' + memberId} };
-      var patient = allPatients.find(function(p){ return p.id===ins.patient_id || p.patient_id===ins.patient_id; });
+      if (!ins && payerCards.length) {
+        var pc = payerCards.find(function(c){ return (c.member_id||'').toLowerCase()===memberId.toLowerCase(); });
+        if (pc) {
+          ins = {id:pc.id,patient_id:null,payer_name:pc.payer_name,policy_number:pc.member_id,member_id:pc.member_id,group_number:pc.group_number,plan_name:pc.plan_name||'',subscriber_name:pc.subscriber_name,relationship:pc.relationship,plan_type:pc.plan_type,copay:pc.copay,deductible:pc.deductible,coinsurance:pc.coinsurance,insurance_type:pc.insurance_type,effective_date:pc.effective_date||new Date().toISOString().slice(0,10),termination_date:pc.termination_date||new Date(Date.now()+365*24*60*60*1000).toISOString().slice(0,10),status:'active',effective_status:'active',eligibility_status:'active',card_image_front:null,card_image_back:null,subscriber_dob:pc.subscriber_dob||''};
+        }
+      }
+      if (!ins) return { data: {status:'not_found',verified:false,error:'Member not found for ID: ' + memberId} };
+      var patient = ins.patient_id ? allPatients.find(function(p){ return p.id===ins.patient_id || p.patient_id===ins.patient_id; }) : null;
       var eligStatus = ins.effective_status || ins.status || 'active';
       if (ins.termination_date && ins.termination_date < new Date().toISOString().slice(0,10)) eligStatus = 'expired';
-      var allPatientIns = allIns.filter(function(i){ return i.patient_id===ins.patient_id; });
+      var allPatientIns = ins.patient_id ? allIns.filter(function(i){ return i.patient_id===ins.patient_id; }) : [ins];
       var otherCoverages = allPatientIns.filter(function(i){ return i.id !== ins.id; });
       var payerShort = (ins.payer_name||'').replace(/ /g,'').toUpperCase().slice(0,6);
       var payerResponse = {
@@ -386,21 +503,47 @@
         coverage_type: 'MODSNP',
         eligibility_code: 'MODSNP3P'
       };
+      var elig = {id:ins.id,insurance_id:ins.id,patient_id:ins.patient_id,plan_type:ins.plan_type,effective_date:ins.effective_date,termination_date:ins.termination_date};
+      var benefits = [{type:'Medical',covered:true,copay:'$'+(ins.copay||30)},{type:'Prescription',covered:true,copay:'$15'}];
       var addrMatch = true;
       if (patient) {
         var ourAddr = ((patient.address||'')+(patient.city?', '+patient.city:'')+(patient.state?', '+patient.state:'')+(patient.zip?' '+patient.zip:'')).toLowerCase().replace(/\s+/g,' ');
         var respAddr = payerResponse.subscriber_address.toLowerCase().replace(/\s+/g,' ');
         if (ourAddr && respAddr && ourAddr.length>3 && ourAddr !== respAddr) addrMatch = false;
       }
-      return { data: {verified:true,status:eligStatus,insurance:ins,patient:patient||null,all_coverages:allPatientIns,other_coverages:otherCoverages,payer_response:payerResponse,address_match:addrMatch,benefits:[{type:'Medical',covered:true,copay:'$'+(ins.copay||30)}],card_image_front:ins.card_image_front||null,card_image_back:ins.card_image_back||null} };
+      return { data: {verified:true,status:eligStatus,insurance:ins,eligibility:elig,patient:patient||null,all_coverages:allPatientIns,other_coverages:otherCoverages,payer_response:payerResponse,address_match:addrMatch,benefits:benefits,card_image_front:ins.card_image_front||null,card_image_back:ins.card_image_back||null} };
     }
     if ((m = path.match(/^\/api\/eligibility\/update-type$/))) {
       if (method === 'POST') {
-        var insId = body.insurance_id;
+        var insId = parseInt(body.insurance_id) || body.insurance_id;
         var newType = body.insurance_type;
         var items = getStore('insurances');
-        var idx = items.findIndex(function(i){return i.id===insId;});
-        if (idx >= 0) { items[idx].insurance_type = newType; setStore('insurances', items); }
+        var idx = items.findIndex(function(i){return i.id===insId || i.id===parseInt(insId);});
+        if (idx >= 0) {
+          var patientId = items[idx].patient_id;
+          var samePatient = items.filter(function(i){ return (i.patient_id===patientId || String(i.patient_id)===String(patientId)) && (i.id!==insId && i.id!==parseInt(insId)); });
+          var typeOrder = ['primary','secondary','tertiary'];
+          var newIdx = typeOrder.indexOf(newType);
+          if (newIdx >= 0) {
+            var currentHolder = samePatient.find(function(i){ return i.insurance_type===newType; });
+            if (currentHolder) {
+              var nextType = newIdx < typeOrder.length-1 ? typeOrder[newIdx+1] : null;
+              var curIdx = items.findIndex(function(i){return i.id===currentHolder.id;});
+              if (curIdx >= 0) items[curIdx].insurance_type = nextType || 'tertiary';
+            }
+          }
+          items[idx].insurance_type = newType;
+          items[idx].eligibility_status = items[idx].effective_status || items[idx].status || 'active';
+          setStore('insurances', items);
+          var allP = getStore('patients');
+          allP.forEach(function(p){
+            if(p.id===patientId || p.patient_id===patientId){
+              var linkedIns = getStore('insurances').filter(function(i2){return i2.patient_id===p.id || i2.patient_id===patientId;});
+              p.insurances = linkedIns;
+            }
+          });
+          setStore('patients', allP);
+        }
         return { data: {ok:true,insurance:items[idx]} };
       }
     }
@@ -417,11 +560,32 @@
         return { data: {ok:true} };
       }
     }
-    if ((m = path.match(/^\/api\/eligibility\/benefit\/(\d+)$/))) {
-      return { data: {ok:true} };
+    if (path === '/api/eligibility/benefit' && method === 'POST') {
+      var benefits = getStore('eligibility_benefits');
+      body.id = nextId('eligibility_benefits');
+      body.created_at = new Date().toISOString();
+      benefits.push(body);
+      setStore('eligibility_benefits', benefits);
+      return { data: body };
     }
-    if ((m = path.match(/^\/api\/eligibility\/payer\/(.+)$/))) {
-      return { data: [] };
+    if ((m = path.match(/^\/api\/eligibility\/benefits\/(\d+)$/))) {
+      var insId = parseInt(m[1]);
+      var benefits = getStore('eligibility_benefits').filter(function(b){ return b.insurance_id === insId || b.insurance_id === parseInt(insId); });
+      return { data: {benefits: benefits} };
+    }
+    if ((m = path.match(/^\/api\/eligibility\/benefit\/(\d+)$/))) {
+      var bid = parseInt(m[1]);
+      if (method === 'PUT') {
+        var benefits = getStore('eligibility_benefits');
+        var idx = benefits.findIndex(function(b){return b.id===bid;});
+        if (idx >= 0) { Object.assign(benefits[idx], body); setStore('eligibility_benefits', benefits); }
+        return { data: {ok:true} };
+      }
+      if (method === 'DELETE') {
+        setStore('eligibility_benefits', getStore('eligibility_benefits').filter(function(b){return b.id!==bid;}));
+        return { data: {ok:true} };
+      }
+      return { data: {ok:true} };
     }
     if (path === '/api/eligibility/hospitals') {
       return { data: [{id:1,name:'Houston General Hospital'},{id:2,name:'Provision Medical Center'},{id:3,name:'Dallas Regional Medical'}] };
@@ -432,7 +596,17 @@
 
     // ===== CHARGES =====
     if (path === '/api/charges' && method === 'GET') {
-      return { data: getStore('charges') };
+      var chgs = getStore('charges');
+      var pts = getStore('patients');
+      var provs = getStore('providers');
+      var resolved = chgs.map(function(c){
+        var p = pts.find(function(pp){ return pp.id===c.patient_id || pp.patient_id===c.patient_id || String(pp.id)===String(c.patient_id); });
+        var pv = provs.find(function(pp){ return pp.id===c.provider_id || String(pp.id)===String(c.provider_id); });
+        c.patient_name = p ? (p.first_name+' '+p.last_name) : (c.patient_name || c.patient_id || '-');
+        c.provider_name = pv ? (pv.first_name+' '+pv.last_name) : (c.provider_name || c.provider_id || '-');
+        return c;
+      });
+      return { data: resolved };
     }
     if (path === '/api/charges' && method === 'POST') {
       var chg = getStore('charges');
@@ -458,6 +632,30 @@
     }
     if ((m = path.match(/^\/api\/charges\/(\d+)$/))) {
       var cid = parseInt(m[1]);
+      if (method === 'GET') {
+        var chg = getStore('charges').find(function(c){return c.id===cid || c.charge_id===m[1];});
+        if (chg) {
+          var pts = getStore('patients');
+          var provs = getStore('providers');
+          var p = pts.find(function(pp){ return pp.id===chg.patient_id || pp.patient_id===chg.patient_id || String(pp.id)===String(chg.patient_id); });
+          var pv = provs.find(function(pp){ return pp.id===chg.provider_id || String(pp.id)===String(chg.provider_id); });
+          chg.patient_name = p ? (p.first_name+' '+p.last_name) : (chg.patient_name || '-');
+          chg.patient_id = p ? p.patient_id : chg.patient_id;
+          chg.first_name = p ? p.first_name : '';
+          chg.last_name = p ? p.last_name : '';
+          chg.mrn = p ? p.mrn : '';
+          chg.dob = p ? p.dob : '';
+          chg.ssn = p ? p.ssn : '';
+          chg.phone = p ? p.phone : '';
+          chg.address = p ? (p.address||'')+(p.city?', '+p.city:'')+(p.state?', '+p.state:'')+(p.zip?' '+p.zip:'') : '';
+          chg.prov_first = pv ? pv.first_name : '';
+          chg.prov_last = pv ? pv.last_name : '';
+          chg.npi = pv ? pv.npi : '';
+          chg.taxonomy_code = pv ? pv.taxonomy_code : '';
+          chg.specialization = pv ? pv.specialization : '';
+        }
+        return chg ? { data: chg } : { status: 404, data: {error:'Not found'} };
+      }
       if (method === 'PUT') {
         var chg = getStore('charges');
         var idx = chg.findIndex(function(c){return c.id===cid;});
@@ -466,9 +664,18 @@
       }
     }
     if (path.indexOf('/api/charges') === 0 && path.indexOf('?') > 0) {
-      var qPid = parseInt((q.patient_id || '0'));
+      var qPid = (q.patient_id || '');
       var chg = getStore('charges');
-      if (qPid) chg = chg.filter(function(c){return c.patient_id===qPid;});
+      if (qPid) chg = chg.filter(function(c){return String(c.patient_id)===String(qPid) || c.patient_id===parseInt(qPid);});
+      var pts = getStore('patients');
+      var provs = getStore('providers');
+      chg = chg.map(function(c){
+        var p = pts.find(function(pp){ return pp.id===c.patient_id || pp.patient_id===c.patient_id || String(pp.id)===String(c.patient_id); });
+        var pv = provs.find(function(pp){ return pp.id===c.provider_id || String(pp.id)===String(c.provider_id); });
+        c.patient_name = p ? (p.first_name+' '+p.last_name) : (c.patient_name || '-');
+        c.provider_name = pv ? (pv.first_name+' '+pv.last_name) : (c.provider_name || '-');
+        return c;
+      });
       return { data: chg };
     }
 
@@ -870,7 +1077,119 @@
       return { data: {ok:true} };
     }
     if (path === '/api/eligibility/payer/create-card' && method === 'POST') {
-      return { data: {ok:true} };
+      var payerCards = getStore('payer_cards');
+      var cardId = nextId('payer_cards');
+      var autoMemberId = body.member_id || ('MID-' + Date.now().toString(36).toUpperCase() + cardId);
+      var card = {
+        id: cardId,
+        payer_name: body.payer_name || '',
+        member_id: autoMemberId,
+        group_number: body.group_number || '',
+        plan_name: body.plan_name || '',
+        plan_type: body.plan_type || 'PPO',
+        insurance_type: body.insurance_type || 'primary',
+        copay: parseFloat(body.copay) || 0,
+        deductible: parseFloat(body.deductible) || 0,
+        coinsurance: parseFloat(body.coinsurance) || 0,
+        subscriber_name: body.subscriber_name || '',
+        subscriber_dob: body.subscriber_dob || '',
+        relationship: body.relationship || 'self',
+        status: 'active',
+        effective_status: 'active',
+        created_at: new Date().toISOString()
+      };
+      payerCards.push(card);
+      setStore('payer_cards', payerCards);
+      var allIns = getStore('insurances');
+      var newInsId = nextId('insurances');
+      var insRecord = {
+        id: newInsId,
+        patient_id: body.patient_id || null,
+        payer_name: card.payer_name,
+        policy_number: card.member_id,
+        member_id: card.member_id,
+        group_number: card.group_number,
+        subscriber_name: card.subscriber_name,
+        relationship: card.relationship,
+        plan_type: card.plan_type || body.plan_type || 'PPO',
+        plan_name: card.plan_name || body.plan_name || '',
+        copay: card.copay,
+        deductible: card.deductible,
+        coinsurance: card.coinsurance,
+        insurance_type: card.insurance_type,
+        effective_date: body.effective_date || new Date().toISOString().slice(0,10),
+        termination_date: body.termination_date || new Date(Date.now() + 365*24*60*60*1000).toISOString().slice(0,10),
+        status: 'active',
+        effective_status: 'active',
+        eligibility_status: 'active',
+        card_image_front: body.card_image_front || null,
+        card_image_back: body.card_image_back || null,
+        source: 'payer_card',
+        created_at: new Date().toISOString()
+      };
+      allIns.push(insRecord);
+      setStore('insurances', allIns);
+      return { data: {ok:true, id: cardId, card: card, insurance_id: newInsId} };
+    }
+    if (path === '/api/eligibility/payer/all') {
+      var q = (q.q || '').toLowerCase();
+      var allIns = getStore('insurances');
+      var payerCards = getStore('payer_cards');
+      var allElig = getStore('eligibility');
+      var allPatients = getStore('patients');
+      var rows = [];
+      allIns.forEach(function(ins) {
+        var p = ins.patient_id ? allPatients.find(function(pp){return pp.id===ins.patient_id||pp.patient_id===ins.patient_id;}) : null;
+        var e = allElig.find(function(el){return el.insurance_id===ins.id;});
+        var name = p ? (p.first_name + ' ' + (p.last_name||'')) : (ins.subscriber_name || '');
+        var mid = (ins.member_id||'').toLowerCase();
+        var pn = (ins.payer_name||'').toLowerCase();
+        if (q && name.toLowerCase().indexOf(q)<0 && mid.indexOf(q)<0 && pn.indexOf(q)<0 && (ins.policy_number||'').toLowerCase().indexOf(q)<0 && (p && p.patient_id ? p.patient_id.toLowerCase().indexOf(q)<0 : true) && (p && p.mrn ? p.mrn.toLowerCase().indexOf(q)<0 : true)) return;
+        rows.push({id:ins.id,_source:'insurance',first_name:name,patient_id:p?p.patient_id:'-',pid:p?p.patient_id:'-',ins_patient_id:ins.patient_id,member_id:ins.member_id,ins_member_id:ins.member_id,payer_name:ins.payer_name,plan_type:ins.plan_type,plan_name:ins.plan_name||'',effective_date:ins.effective_date,termination_date:ins.termination_date,status:ins.effective_status||ins.status||'active',ins_status:ins.status});
+      });
+      payerCards.forEach(function(card) {
+        var mid = (card.member_id||'').toLowerCase();
+        var pn = (card.payer_name||'').toLowerCase();
+        if (q && mid.indexOf(q)<0 && pn.indexOf(q)<0 && (card.subscriber_name||'').toLowerCase().indexOf(q)<0) return;
+        if (allIns.find(function(i){return i.member_id===card.member_id;})) return;
+        rows.push({id:card.id,_source:'payer_card',first_name:card.subscriber_name||'',patient_id:'-',pid:'-',ins_patient_id:null,member_id:card.member_id,ins_member_id:card.member_id,payer_name:card.payer_name,plan_type:card.plan_type,plan_name:card.plan_name||'',effective_date:card.effective_date||'',termination_date:card.termination_date||'',status:card.effective_status||card.status||'active',ins_status:card.status});
+      });
+      allElig.forEach(function(el) {
+        var existing = rows.find(function(r){return r.id===el.id;});
+        if (existing) return;
+        var p = el.patient_id ? allPatients.find(function(pp){return pp.id===el.patient_id||String(pp.patient_id)===String(el.patient_id);}) : null;
+        var name = p ? (p.first_name + ' ' + (p.last_name||'')) : '';
+        var mid = (el.member_id||'').toLowerCase();
+        var pn = (el.payer_name||'').toLowerCase();
+        if (q && name.toLowerCase().indexOf(q)<0 && mid.indexOf(q)<0 && pn.indexOf(q)<0) return;
+        rows.push({id:el.id,_source:'eligibility',first_name:name,patient_id:p?p.patient_id:'-',pid:p?p.patient_id:'-',ins_patient_id:el.patient_id,member_id:el.member_id,ins_member_id:el.member_id,payer_name:el.payer_name,plan_type:el.plan_type,effective_date:el.effective_date,termination_date:el.termination_date,status:el.status||'active',ins_status:el.status});
+      });
+      return { data: rows };
+    }
+    if ((m = path.match(/^\/api\/eligibility\/payer\/search-member\/(.+)$/))) {
+      var searchId = decodeURIComponent(m[1]).trim().toLowerCase();
+      var allIns = getStore('insurances');
+      var payerCards = getStore('payer_cards');
+      var allPatients = getStore('patients');
+      var found = [];
+      var cards = payerCards.filter(function(c){ return (c.member_id||'').toLowerCase() === searchId; });
+      cards.forEach(function(card) {
+        var insMatch = allIns.find(function(i){ return i.member_id && i.member_id.toLowerCase() === searchId; });
+        var patient = insMatch && insMatch.patient_id ? allPatients.find(function(p){ return p.id === insMatch.patient_id || p.patient_id === insMatch.patient_id; }) : null;
+        found.push({ insurance: insMatch || {id:card.id,payer_name:card.payer_name,member_id:card.member_id,group_number:card.group_number,plan_name:card.plan_name,plan_type:card.plan_type,insurance_type:card.insurance_type,copay:card.copay,deductible:card.deductible,coinsurance:card.coinsurance,subscriber_name:card.subscriber_name,effective_status:card.effective_status,status:card.status,card_image_front:null,card_image_back:null,patient_id:null}, patient: patient, eligibilities: [] });
+      });
+      if (!found.length) {
+        allIns.forEach(function(ins) {
+          if (ins.member_id && ins.member_id.toLowerCase() === searchId) {
+            var patient = ins.patient_id ? allPatients.find(function(p){ return p.id === ins.patient_id || p.patient_id === ins.patient_id; }) : null;
+            found.push({ insurance: ins, patient: patient, eligibilities: [] });
+          }
+        });
+      }
+      if (!found.length) {
+        return { data: {found:false, results:[]} };
+      }
+      return { data: {found:true, results:found} };
     }
 
     // ===== REPORTS =====
@@ -1082,7 +1401,7 @@
       return { data: getConfig() };
     }
     if (path === '/api/site-courses') {
-      if (method === 'GET') return { data: (getConfig().courses||[]).filter(function(c){return c.visible;}); }
+      if (method === 'GET') return { data: (getConfig().courses||[]).filter(function(c){return c.visible;}) };
       if (method === 'POST') { var cfg = getConfig(); cfg.courses = body.courses || cfg.courses; setConfig(cfg); return { data: {ok:true,courses:cfg.courses} }; }
     }
     if (path.indexOf('/api/site-courses/') === 0 && path.indexOf('/add') > 0 && method === 'POST') {
